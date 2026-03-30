@@ -1,0 +1,120 @@
+{
+  "kratzer_2025": {
+    "source": "Kratzer et al., CA: A Cancer Journal for Clinicians, 2025 (fallback)",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12593258/",
+    "key_findings": [
+      "313,780 new prostate cancer cases projected for 2025",
+      "35,770 deaths projected for 2025",
+      "Incidence increased 3.0% per year from 2014-2021 after declining 6.4%/yr 2007-2014",
+      "Distant-stage incidence rising 4.6-4.8% per year",
+      "Mortality decline slowed from ~3.5%/yr to 0.6%/yr in recent decade",
+      "Black men have 2x higher mortality than any other racial/ethnic group",
+      "5-year survival for distant-stage: 38%; localized: ~100%"
+    ],
+    "incidence_trend_by_stage": [
+      {
+        "year": 2004,
+        "localized_rate": 118.2,
+        "distant_rate": 7.1
+      },
+      {
+        "year": 2006,
+        "localized_rate": 112.5,
+        "distant_rate": 6.8
+      },
+      {
+        "year": 2008,
+        "localized_rate": 104.1,
+        "distant_rate": 6.5
+      },
+      {
+        "year": 2010,
+        "localized_rate": 98.3,
+        "distant_rate": 6.2
+      },
+      {
+        "year": 2012,
+        "localized_rate": 88.4,
+        "distant_rate": 6.8
+      },
+      {
+        "year": 2014,
+        "localized_rate": 76.2,
+        "distant_rate": 7.4
+      },
+      {
+        "year": 2016,
+        "localized_rate": 80.1,
+        "distant_rate": 8.2
+      },
+      {
+        "year": 2018,
+        "localized_rate": 84.5,
+        "distant_rate": 9.5
+      },
+      {
+        "year": 2020,
+        "localized_rate": 82.1,
+        "distant_rate": 10.8
+      },
+      {
+        "year": 2021,
+        "localized_rate": 88.3,
+        "distant_rate": 11.9
+      }
+    ]
+  },
+  "incidence_trends_2020": {
+    "source": "Incidence Trends by Race/Ethnicity 2000-2020, PMC (fallback)",
+    "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10720073",
+    "incidence_by_race": [
+      {
+        "race_ethnicity": "Non-Hispanic Black",
+        "rate_per_100k": 175.2,
+        "mortality_rate": 37.9
+      },
+      {
+        "race_ethnicity": "Non-Hispanic White",
+        "rate_per_100k": 109.3,
+        "mortality_rate": 18.1
+      },
+      {
+        "race_ethnicity": "Hispanic",
+        "rate_per_100k": 96.4,
+        "mortality_rate": 15.8
+      },
+      {
+        "race_ethnicity": "Non-Hispanic Asian/PI",
+        "rate_per_100k": 60.3,
+        "mortality_rate": 9.2
+      },
+      {
+        "race_ethnicity": "Non-Hispanic AIAN",
+        "rate_per_100k": 78.2,
+        "mortality_rate": 22.4
+      }
+    ],
+    "localized_trend_by_race": [
+      {
+        "race_ethnicity": "Non-Hispanic White",
+        "annual_pct_change": 2.8,
+        "direction": "up"
+      },
+      {
+        "race_ethnicity": "Non-Hispanic Black",
+        "annual_pct_change": 0.1,
+        "direction": "stable"
+      },
+      {
+        "race_ethnicity": "Hispanic",
+        "annual_pct_change": -1.2,
+        "direction": "down"
+      },
+      {
+        "race_ethnicity": "Non-Hispanic Asian/PI",
+        "annual_pct_change": 3.1,
+        "direction": "up"
+      }
+    ]
+  }
+}
