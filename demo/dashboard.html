@@ -1,983 +1,1226 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prostate Cancer in America — Interactive Dashboard</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prostate Cancer Statistics Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Plotly: async loader — tries 3 CDNs in order, no document.write -->
+    <script>
+    (function () {
+        var CDNS = [
+            'https://cdn.plot.ly/plotly-2.26.0.min.js',
+            'https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.26.0/plotly.min.js',
+            'https://unpkg.com/plotly.js-dist-min@2.26.0/plotly.min.js'
+        ];
+        var _queue = [];
+        /* Call fn() immediately if Plotly is ready, otherwise queue it */
+        window.onPlotlyReady = function (fn) {
+            if (window.Plotly) { fn(); } else { _queue.push(fn); }
+        };
+        function tryLoad(i) {
+            if (i >= CDNS.length) {
+                console.error('All Plotly CDNs failed — charts unavailable');
+                return;
+            }
+            var s   = document.createElement('script');
+            s.src   = CDNS[i];
+            s.async = false;          /* keep execution order predictable  */
+            s.onload  = function () { _queue.forEach(function (f) { f(); }); _queue = []; };
+            s.onerror = function () { tryLoad(i + 1); };
+            document.head.appendChild(s);
+        }
+        tryLoad(0);
+    }());
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    :root {
-      --navy:    #1a3a5c;
-      --blue:    #2471a3;
-      --lblue:   #aed6f1;
-      --sky:     #d6eaf8;
-      --red:     #c0392b;
-      --lred:    #f5b7b1;
-      --green:   #1e8449;
-      --lgreen:  #a9dfbf;
-      --orange:  #d35400;
-      --yellow:  #d4ac0d;
-      --gray:    #717d7e;
-      --lgray:   #f2f3f4;
-      --white:   #ffffff;
-      --text:    #1c2833;
-      --subtext: #5d6d7e;
-    }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #F7F5F2;
+            color: #2C2C2C;
+            font-weight: 400;
+            line-height: 1.6;
+        }
 
-    body {
-      font-family: "Segoe UI", Arial, sans-serif;
-      font-size: 17px;
-      background: #eaf2f8;
-      color: var(--text);
-      min-height: 100vh;
-    }
+        /* ─── HEADER ─────────────────────────────────────────────────── */
+        .header {
+            background: #2A2A28;
+            color: #F7F5F2;
+            padding: 4rem 2rem 3.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 110% 40%, rgba(138,154,139,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 80% at -10% 70%, rgba(196,185,168,0.06) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .header-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header-eyebrow {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #8A9A8B;
+            margin-bottom: 1rem;
+        }
+        .header h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 3rem;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+            color: #F7F5F2;
+            line-height: 1.15;
+        }
+        .header p {
+            font-size: 0.875rem;
+            font-weight: 300;
+            color: #A8A29C;
+            letter-spacing: 0.02em;
+        }
 
-    /* ── HEADER ── */
-    header {
-      background: linear-gradient(135deg, var(--navy) 0%, #1f618d 100%);
-      color: white;
-      padding: 28px 40px 22px;
-      display: flex;
-      align-items: flex-start;
-      gap: 20px;
-    }
-    .header-icon { font-size: 44px; margin-top: 2px; flex-shrink: 0; }
-    header h1 { font-size: 26px; font-weight: 700; line-height: 1.25; margin-bottom: 6px; }
-    header p  { font-size: 15px; color: #aed6f1; line-height: 1.5; max-width: 720px; }
-    .header-badge {
-      margin-left: auto; flex-shrink: 0; text-align: right;
-      font-size: 12px; color: #aed6f1; line-height: 1.7;
-    }
-    .header-badge strong { display: block; font-size: 14px; color: white; }
+        /* ─── NAV TABS ───────────────────────────────────────────────── */
+        .nav-tabs {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #FDFCFB;
+            border-bottom: 1px solid #E5E0D9;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+        }
+        .nav-tabs-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            gap: 0;
+            padding: 0 2rem;
+            overflow-x: auto;
+        }
+        .nav-tab {
+            padding: 1.1rem 1.4rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #ABA59F;
+            border-bottom: 2px solid transparent;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+        }
+        .nav-tab:hover  { color: #2C2C2C; }
+        .nav-tab.active { color: #2C2C2C; border-bottom-color: #8A9A8B; }
 
-    /* ── FILTER BAR ── */
-    .filter-bar {
-      background: var(--navy);
-      padding: 14px 40px;
-      display: flex;
-      align-items: center;
-      gap: 28px;
-      flex-wrap: wrap;
-      border-bottom: 3px solid var(--blue);
-    }
-    .filter-label { color: #aed6f1; font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
-    .race-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
-    .race-btn {
-      padding: 6px 13px; border-radius: 20px; border: 2px solid transparent;
-      font-size: 13px; font-weight: 600; cursor: pointer; transition: all .18s;
-      background: rgba(255,255,255,.12); color: white;
-    }
-    .race-btn.active { background: var(--blue); border-color: #aed6f1; color: white; }
-    .race-btn:hover:not(.active) { background: rgba(255,255,255,.22); }
+        /* ─── LAYOUT ─────────────────────────────────────────────────── */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3.5rem 2rem;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeSlide 0.35s ease forwards;
+        }
+        .tab-content.active { display: block; }
 
-    .year-controls { display: flex; align-items: center; gap: 10px; }
-    .year-select {
-      padding: 5px 10px; border-radius: 6px; border: 1px solid #5d8fbe;
-      background: rgba(255,255,255,.1); color: white; font-size: 14px; cursor: pointer;
-    }
-    .year-select option { background: var(--navy); color: white; }
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
 
-    /* ── TABS ── */
-    .tabs {
-      background: white;
-      display: flex;
-      border-bottom: 3px solid var(--lblue);
-      overflow-x: auto;
-      padding: 0 30px;
-    }
-    .tab-btn {
-      padding: 14px 22px; font-size: 15px; font-weight: 600; cursor: pointer;
-      border: none; border-bottom: 4px solid transparent; background: none;
-      color: var(--subtext); white-space: nowrap; transition: all .18s;
-      display: flex; align-items: center; gap: 7px;
-    }
-    .tab-btn:hover { color: var(--blue); background: var(--sky); }
-    .tab-btn.active { color: var(--navy); border-bottom-color: var(--blue); background: white; }
-    .tab-icon { font-size: 18px; }
+        /* ─── KPI CARDS ──────────────────────────────────────────────── */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2.75rem;
+        }
+        .kpi-card {
+            background: #FFFFFF;
+            border-radius: 3px;
+            padding: 1.75rem 1.5rem;
+            border: 1px solid #EAE6E0;
+            border-left: 3px solid #8A9A8B;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            cursor: default;
+        }
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+        }
+        .kpi-card.red    { border-left-color: #C17F5C; }
+        .kpi-card.green  { border-left-color: #8A9A8B; }
+        .kpi-card.amber  { border-left-color: #C4A882; }
+        .kpi-card.purple { border-left-color: #9B8FAC; }
 
-    /* ── MAIN CONTENT ── */
-    main { padding: 28px 40px 40px; max-width: 1300px; margin: 0 auto; }
+        /* icon color per card variant */
+        .kpi-icon { margin-bottom: 0.9rem; line-height: 0; color: #8A9A8B; opacity: 0.85; }
+        .kpi-card.red    .kpi-icon { color: #C17F5C; }
+        .kpi-card.green  .kpi-icon { color: #8A9A8B; }
+        .kpi-card.amber  .kpi-icon { color: #C4A882; }
+        .kpi-card.purple .kpi-icon { color: #9B8FAC; }
 
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
+        .kpi-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: #ABA59F;
+            margin-bottom: 0.45rem;
+        }
+        .kpi-value {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: #2C2C2C;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
 
-    .panel-grid {
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 24px;
-      align-items: start;
-    }
+        /* ─── CHART CONTAINERS ───────────────────────────────────────── */
+        .chart-container {
+            background: #FFFFFF;
+            border-radius: 3px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #EAE6E0;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.75rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid #F0ECE6;
+        }
+        .chart-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #2C2C2C;
+            letter-spacing: -0.01em;
+        }
 
-    /* ── CHART CARD ── */
-    .chart-card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0,0,0,.08);
-      padding: 24px 28px;
-    }
-    .chart-card h2 { font-size: 19px; color: var(--navy); margin-bottom: 4px; }
-    .chart-card .subtitle { font-size: 14px; color: var(--subtext); margin-bottom: 18px; }
-    .chart-wrap { position: relative; height: 380px; }
+        /* ─── BUTTONS ────────────────────────────────────────────────── */
+        .button-group { display: flex; gap: 0.4rem; }
+        .btn {
+            padding: 0.4rem 1.15rem;
+            border: 1px solid #D5CECA;
+            border-radius: 100px;
+            background: transparent;
+            color: #ABA59F;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+        .btn:hover  { border-color: #8A9A8B; color: #8A9A8B; background: rgba(138,154,139,0.05); }
+        .btn.active { background: #8A9A8B; color: #FFFFFF; border-color: #8A9A8B; }
 
-    /* ── LEGEND PILLS ── */
-    .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--subtext); }
-    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-    .legend-line { width: 22px; height: 4px; border-radius: 2px; flex-shrink: 0; }
+        /* ─── INSIGHT BOXES ──────────────────────────────────────────── */
+        .insight-box {
+            background: #F2EFE9;
+            border-left: 3px solid #8A9A8B;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.75rem;
+            border-radius: 0 3px 3px 0;
+        }
+        .insight-box.red   { background: #F8F0EB; border-left-color: #C17F5C; }
+        .insight-box.green { background: #EFF3EF; border-left-color: #8A9A8B; }
+        .insight-box.amber { background: #F5EFE7; border-left-color: #C4A882; }
 
-    /* ── ANNOTATION BAND ── */
-    .annotation-note {
-      margin-top: 12px; padding: 10px 14px;
-      background: #fef9e7; border-left: 4px solid var(--yellow);
-      border-radius: 0 6px 6px 0; font-size: 13px; color: #7d6608; line-height: 1.5;
-    }
+        .insight-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-weight: 600;
+            font-size: 0.975rem;
+            margin-bottom: 0.5rem;
+            color: #2C2C2C;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+        .insight-title svg { flex-shrink: 0; }
+        .insight-box        .insight-title svg { color: #8A9A8B; }
+        .insight-box.red    .insight-title svg { color: #C17F5C; }
+        .insight-box.green  .insight-title svg { color: #8A9A8B; }
+        .insight-box.amber  .insight-title svg { color: #C4A882; }
 
-    /* ── SIDEBAR CARDS ── */
-    .sidebar { display: flex; flex-direction: column; gap: 16px; }
+        .insight-text {
+            font-size: 0.875rem;
+            color: #5E5852;
+            line-height: 1.75;
+        }
 
-    .insight-card {
-      background: white; border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0,0,0,.08);
-      padding: 18px 20px;
-    }
-    .insight-card h3 { font-size: 15px; color: var(--navy); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-    .insight-card p, .insight-card li { font-size: 14px; color: var(--text); line-height: 1.6; }
-    .insight-card ul { padding-left: 16px; }
-    .insight-card li { margin-bottom: 5px; }
+        /* ─── TWO-COLUMN ROW ─────────────────────────────────────────── */
+        .two-chart-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        @media (max-width: 1024px) { .two-chart-row { grid-template-columns: 1fr; } }
 
-    .stat-big {
-      font-size: 38px; font-weight: 700; line-height: 1;
-      margin-bottom: 4px;
-    }
-    .stat-label { font-size: 13px; color: var(--subtext); line-height: 1.4; }
+        /* ─── YOUR RISK FORM ─────────────────────────────────────────── */
+        .your-risk-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.75rem;
+        }
+        .form-group { display: flex; flex-direction: column; }
+        .form-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #ABA59F;
+            margin-bottom: 0.65rem;
+        }
+        .form-control {
+            padding: 0.75rem 1rem;
+            border: 1px solid #D5CECA;
+            border-radius: 3px;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            color: #2C2C2C;
+            background: #FFFFFF;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-control:focus { outline: none; border-color: #8A9A8B; box-shadow: 0 0 0 3px rgba(138,154,139,0.12); }
 
-    .disparity-bar-wrap { margin-top: 10px; }
-    .d-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px; }
-    .d-label { width: 72px; font-weight: 600; }
-    .d-bar-bg { flex: 1; background: var(--lgray); border-radius: 4px; height: 18px; overflow: hidden; }
-    .d-bar { height: 100%; border-radius: 4px; transition: width .5s; }
-    .d-val { width: 50px; text-align: right; font-weight: 600; }
+        /* ─── RISK CARDS ─────────────────────────────────────────────── */
+        .risk-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2.75rem;
+        }
+        .risk-card {
+            background: #FFFFFF;
+            border: 1px solid #EAE6E0;
+            border-radius: 3px;
+            padding: 1.75rem;
+            text-align: center;
+        }
+        .risk-card-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: #ABA59F;
+            margin-bottom: 0.5rem;
+        }
+        .risk-card-value {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: #2C2C2C;
+            letter-spacing: -0.02em;
+        }
 
-    .callout {
-      border-radius: 10px; padding: 16px 18px;
-      font-size: 14px; line-height: 1.6;
-    }
-    .callout.blue  { background: var(--sky);  border-left: 4px solid var(--blue); }
-    .callout.red   { background: #fdf2f2; border-left: 4px solid var(--red); }
-    .callout.green { background: #eafaf1; border-left: 4px solid var(--green); }
+        /* ─── GUIDANCE BOXES ─────────────────────────────────────────── */
+        .screening-guidance {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .guidance-box {
+            background: #FFFFFF;
+            border: 1px solid #EAE6E0;
+            border-radius: 3px;
+            padding: 1.75rem;
+        }
+        .guidance-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-weight: 600;
+            font-size: 0.975rem;
+            margin-bottom: 0.75rem;
+            color: #2C2C2C;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+        .guidance-title svg { color: #8A9A8B; flex-shrink: 0; }
+        .guidance-text { font-size: 0.875rem; color: #5E5852; line-height: 1.75; }
 
-    /* ── INSIGHTS TAB ── */
-    .insights-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-    }
-    .insight-big {
-      background: white; border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0,0,0,.08);
-      padding: 24px; display: flex; flex-direction: column; gap: 12px;
-    }
-    .insight-big .icon { font-size: 36px; }
-    .insight-big h3 { font-size: 17px; font-weight: 700; color: var(--navy); }
-    .insight-big p  { font-size: 15px; color: var(--text); line-height: 1.65; }
-    .tag {
-      display: inline-block; padding: 3px 10px; border-radius: 12px;
-      font-size: 12px; font-weight: 700; letter-spacing: .04em;
-    }
-    .tag.important { background: #fdebd0; color: #a04000; }
-    .tag.good      { background: #eafaf1; color: #1e8449; }
-    .tag.caution   { background: #fef9e7; color: #7d6608; }
-    .cta-btn {
-      display: inline-block; margin-top: 10px; padding: 12px 22px;
-      background: var(--blue); color: white; border-radius: 8px;
-      font-size: 15px; font-weight: 700; text-decoration: none;
-      border: none; cursor: pointer;
-    }
-    .cta-btn:hover { background: var(--navy); }
+        /* ─── SECTION HEADINGS ───────────────────────────────────────── */
+        .section-heading {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1.65rem;
+            font-weight: 500;
+            color: #2C2C2C;
+            margin-bottom: 2rem;
+            letter-spacing: -0.01em;
+        }
 
-    /* ── SCRAPING / MINING CALLOUT ── */
-    .tech-badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      font-size: 11px; font-weight: 700; padding: 3px 9px;
-      border-radius: 10px; letter-spacing: .04em; text-transform: uppercase;
-    }
-    .tech-badge.scrape { background: #e8f5e9; color: #2e7d32; }
-    .tech-badge.mine   { background: #e3f2fd; color: #1565c0; }
-    .tech-badge.viz    { background: #f3e5f5; color: #6a1b9a; }
+        /* ─── SOURCES ────────────────────────────────────────────────── */
+        .sources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .source-card {
+            background: #FFFFFF;
+            border-radius: 3px;
+            padding: 1.75rem;
+            border: 1px solid #EAE6E0;
+            border-top: 3px solid #8A9A8B;
+        }
+        .source-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-weight: 500;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            color: #2C2C2C;
+        }
+        .source-text { font-size: 0.85rem; color: #5E5852; margin-bottom: 1rem; line-height: 1.65; }
+        .source-link {
+            color: #8A9A8B;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            word-break: break-all;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s ease;
+        }
+        .source-link:hover { border-bottom-color: #8A9A8B; }
 
-    .source-strip {
-      margin-top: 8px; font-size: 12px; color: var(--subtext);
-      display: flex; align-items: center; gap: 8px;
-    }
+        /* ─── FOOTER ─────────────────────────────────────────────────── */
+        .footer {
+            background: #2A2A28;
+            color: #A8A29C;
+            padding: 3rem 2rem;
+            text-align: center;
+            font-size: 0.82rem;
+            margin-top: 5rem;
+            letter-spacing: 0.02em;
+        }
+        .footer p + p { margin-top: 0.5rem; opacity: 0.55; }
 
-    /* ── RESPONSIVE ── */
-    @media (max-width: 900px) {
-      .panel-grid { grid-template-columns: 1fr; }
-      header { padding: 20px 20px 16px; }
-      .filter-bar { padding: 12px 20px; }
-      main { padding: 20px; }
-      .header-badge { display: none; }
-    }
-  </style>
+        /* ─── SELECT WRAPPER ─────────────────────────────────────────── */
+        .select-wrapper { position: relative; }
+        .select-wrapper select {
+            width: 100%;
+            padding: 0.55rem 2rem 0.55rem 0.9rem;
+            border: 1px solid #D5CECA;
+            border-radius: 100px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #2C2C2C;
+            background: #FFFFFF;
+            cursor: pointer;
+            appearance: none;
+            transition: border-color 0.2s ease;
+        }
+        .select-wrapper select:focus { outline: none; border-color: #8A9A8B; }
+        .select-wrapper::after {
+            content: '▾';
+            position: absolute;
+            right: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #ABA59F;
+            font-size: 0.75rem;
+        }
+        .section-divider { height: 1px; background: #EAE6E0; margin: 2.5rem 0; }
+    </style>
 </head>
 <body>
 
-<!-- ═══════════ HEADER ═══════════ -->
-<header>
-  <div class="header-icon">🎗️</div>
-  <div>
-    <h1>Prostate Cancer in America: Risk, Trends &amp; Disparities</h1>
-    <p>An interactive data dashboard exploring incidence, mortality, and stage at diagnosis across demographic and geographic groups — designed to help people aged 50–65 understand their risk and make informed decisions.</p>
-  </div>
-  <div class="header-badge">
-    <strong>Data Science Capstone</strong>
-    Ava McClinton · GWU · Spring 2026<br>
-    Source: NCI SEER Program &amp; CDC WONDER
-  </div>
-</header>
-
-<!-- ═══════════ FILTER BAR ═══════════ -->
-<div class="filter-bar">
-  <span class="filter-label">Race / Ethnicity</span>
-  <div class="race-buttons">
-    <button class="race-btn active" data-race="overall">All Men</button>
-    <button class="race-btn" data-race="black">Black</button>
-    <button class="race-btn" data-race="white">White</button>
-    <button class="race-btn" data-race="hispanic">Hispanic</button>
-    <button class="race-btn" data-race="asian">Asian / PI</button>
-  </div>
-
-  <span class="filter-label" style="margin-left:12px;">Year Range</span>
-  <div class="year-controls">
-    <select class="year-select" id="yearFrom"></select>
-    <span style="color:#aed6f1;">to</span>
-    <select class="year-select" id="yearTo"></select>
-  </div>
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!--  HEADER                                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="header">
+    <div class="header-content">
+        <div class="header-eyebrow">Data Science Capstone &nbsp;·&nbsp; March 2026</div>
+        <h1>Prostate Cancer<br>Statistics Dashboard</h1>
+        <p>Epidemiological Analysis &amp; Risk Assessment &mdash; United States, 2000–2022</p>
+    </div>
 </div>
 
-<!-- ═══════════ TABS ═══════════ -->
-<div class="tabs">
-  <button class="tab-btn active" data-tab="trends">
-    <span class="tab-icon">📈</span> Trends Over Time
-  </button>
-  <button class="tab-btn" data-tab="race">
-    <span class="tab-icon">👥</span> Racial Disparities
-  </button>
-  <button class="tab-btn" data-tab="stage">
-    <span class="tab-icon">🔬</span> Stage at Diagnosis
-  </button>
-  <button class="tab-btn" data-tab="states">
-    <span class="tab-icon">🗺️</span> State by State
-  </button>
-  <button class="tab-btn" data-tab="insights">
-    <span class="tab-icon">💡</span> What This Means for You
-  </button>
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!--  NAV                                                               -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="nav-tabs">
+    <div class="nav-tabs-container">
+        <button class="nav-tab active" data-tab="overview">Overview</button>
+        <button class="nav-tab" data-tab="trends">Trends</button>
+        <button class="nav-tab" data-tab="disparities">Disparities</button>
+        <button class="nav-tab" data-tab="geography">Geography</button>
+        <button class="nav-tab" data-tab="survival">Survival &amp; Age</button>
+        <button class="nav-tab" data-tab="risk">Your Risk</button>
+        <button class="nav-tab" data-tab="sources">Sources</button>
+    </div>
 </div>
 
-<!-- ═══════════ MAIN ═══════════ -->
-<main>
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!--  MAIN CONTENT                                                      -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="container">
 
-  <!-- ── TAB 1: TRENDS ── -->
-  <div class="tab-panel active" id="tab-trends">
-    <div class="panel-grid">
-      <div>
-        <div class="chart-card">
-          <h2>Incidence &amp; Mortality Trends (1990–2021)</h2>
-          <p class="subtitle">Age-adjusted rates per 100,000 men · Vertical markers show USPSTF guideline changes</p>
-          <div class="chart-wrap"><canvas id="trendsChart"></canvas></div>
-          <div class="legend">
-            <div class="legend-item"><div class="legend-line" style="background:var(--blue)"></div> Incidence Rate</div>
-            <div class="legend-item"><div class="legend-line" style="background:var(--red)"></div> Mortality Rate</div>
-            <div class="legend-item"><div class="legend-line" style="background:var(--orange); height:2px; border-top:2px dashed var(--orange)"></div> USPSTF Guideline Changes</div>
-          </div>
-          <div class="annotation-note">
-            ⚠️ <strong>2012:</strong> USPSTF recommended <em>against</em> routine PSA screening → incidence dropped sharply.
-            <strong>2018:</strong> Updated to shared decision-making for men 55–69.
-            Late-stage diagnoses have been rising since 2012.
-          </div>
-          <div class="source-strip">
-            <span class="tech-badge scrape">🕷 Scraped</span> USPSTF policy dates &amp; ACS statistics
-            <span class="tech-badge viz">📊 Viz</span> Chart.js dual-axis line chart
-          </div>
-        </div>
-      </div>
+    <!-- ── OVERVIEW TAB ──────────────────────────────────────────── -->
+    <div id="overview" class="tab-content active">
+        <h2 class="section-heading">Key Metrics</h2>
+        <div class="kpi-grid">
 
-      <div class="sidebar">
-        <div class="insight-card">
-          <h3>📌 Key Numbers (2021)</h3>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;">
-            <div>
-              <div class="stat-big" style="color:var(--blue)" id="stat-incidence">108</div>
-              <div class="stat-label">New diagnoses per 100,000 men</div>
+            <div class="kpi-card">
+                <div class="kpi-icon">
+                    <!-- bar chart -->
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
+                </div>
+                <div class="kpi-label">2022 Overall Incidence</div>
+                <div class="kpi-value">165.8/100K</div>
             </div>
-            <div>
-              <div class="stat-big" style="color:var(--red)" id="stat-mortality">19</div>
-              <div class="stat-label">Deaths per 100,000 men</div>
+
+            <div class="kpi-card red">
+                <div class="kpi-icon">
+                    <!-- activity / pulse -->
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
+                <div class="kpi-label">2022 Mortality Rate</div>
+                <div class="kpi-value">19.6/100K</div>
             </div>
-          </div>
-        </div>
 
-        <div class="insight-card">
-          <h3>📉 Change Since Peak</h3>
-          <p style="font-size:14px;color:var(--subtext);margin-bottom:8px;">Incidence peaked in <strong>1993</strong> following widespread PSA testing, then fell 43% by 2021. Mortality has fallen steadily — down ~52% from its peak.</p>
-          <div class="callout green">
-            <strong>Good news:</strong> Survival for localized prostate cancer is ~99%. Early detection still matters.
-          </div>
-        </div>
-
-        <div class="insight-card">
-          <h3>📅 Guideline Timeline</h3>
-          <ul style="font-size:13px;list-style:none;padding:0;">
-            <li style="padding:6px 0;border-bottom:1px solid #eee">📍 <strong>1987:</strong> PSA test introduced</li>
-            <li style="padding:6px 0;border-bottom:1px solid #eee">📍 <strong>2008:</strong> USPSTF: caution for 75+</li>
-            <li style="padding:6px 0;border-bottom:1px solid #eee">📍 <strong>2012:</strong> USPSTF: discouraged for all</li>
-            <li style="padding:6px 0;">📍 <strong>2018:</strong> USPSTF: shared decision-making for 55–69</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── TAB 2: RACE ── -->
-  <div class="tab-panel" id="tab-race">
-    <div class="panel-grid">
-      <div>
-        <div class="chart-card">
-          <h2>Racial &amp; Ethnic Disparities</h2>
-          <p class="subtitle">Average age-adjusted incidence and mortality rates per 100,000 men · Selected decade</p>
-          <div class="chart-wrap"><canvas id="raceChart"></canvas></div>
-          <div class="legend">
-            <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Incidence</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Mortality</div>
-          </div>
-          <div class="source-strip">
-            <span class="tech-badge mine">⛏ Mined</span> Rate ratios &amp; disparity gaps computed from SEER data
-            <span class="tech-badge viz">📊 Viz</span> Grouped bar chart
-          </div>
-        </div>
-      </div>
-
-      <div class="sidebar">
-        <div class="insight-card">
-          <h3>⚠️ The Black-White Gap</h3>
-          <p style="font-size:14px;margin-bottom:12px;">Black men face the highest burden of any group — and the disparity is not explained by biology alone.</p>
-          <div class="disparity-bar-wrap" id="disparityBars">
-            <!-- filled by JS -->
-          </div>
-        </div>
-
-        <div class="insight-card callout red" style="padding:16px 18px;">
-          <strong>📊 Rate Ratio:</strong> Black men are diagnosed at <strong>~1.7×</strong> the rate of white men and die from prostate cancer at <strong>~2.1×</strong> the rate. This gap has persisted for decades and is a central focus of public health research.
-        </div>
-
-        <div class="insight-card">
-          <h3>🔍 Why the Disparity?</h3>
-          <ul>
-            <li>Less access to routine screening</li>
-            <li>Later stage at diagnosis on average</li>
-            <li>Differences in treatment receipt</li>
-            <li>Higher prevalence of aggressive tumor biology</li>
-            <li>Socioeconomic and geographic barriers</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── TAB 3: STAGE ── -->
-  <div class="tab-panel" id="tab-stage">
-    <div class="panel-grid">
-      <div>
-        <div class="chart-card">
-          <h2>Stage at Diagnosis Over Time</h2>
-          <p class="subtitle">Percentage of new prostate cancer cases by stage · Notice the shift after 2012</p>
-          <div class="chart-wrap"><canvas id="stageChart"></canvas></div>
-          <div class="legend">
-            <div class="legend-item"><div class="legend-dot" style="background:#1e8449"></div> Localized (curable)</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div> Regional</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Distant (advanced)</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--gray)"></div> Unknown</div>
-          </div>
-          <div class="annotation-note">
-            📌 After the 2012 USPSTF recommendation against routine PSA screening, the share of <strong>distant-stage diagnoses nearly doubled</strong> (from ~5% to ~11% by 2021) — a trend that has alarmed oncologists.
-          </div>
-          <div class="source-strip">
-            <span class="tech-badge mine">⛏ Mined</span> Stage distribution trends via joinpoint analysis
-            <span class="tech-badge viz">📊 Viz</span> Stacked bar chart
-          </div>
-        </div>
-      </div>
-
-      <div class="sidebar">
-        <div class="insight-card">
-          <h3>📊 5-Year Survival by Stage</h3>
-          <div style="margin-top:8px;">
-            <div class="d-row">
-              <div class="d-label" style="color:var(--green)">Localized</div>
-              <div class="d-bar-bg"><div class="d-bar" style="width:99%;background:var(--green)"></div></div>
-              <div class="d-val">~99%</div>
+            <div class="kpi-card green">
+                <div class="kpi-icon">
+                    <!-- check circle -->
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+                </div>
+                <div class="kpi-label">Localized Survival</div>
+                <div class="kpi-value">99.9%</div>
             </div>
-            <div class="d-row">
-              <div class="d-label" style="color:var(--yellow)">Regional</div>
-              <div class="d-bar-bg"><div class="d-bar" style="width:99%;background:var(--yellow)"></div></div>
-              <div class="d-val">~99%</div>
+
+            <div class="kpi-card amber">
+                <div class="kpi-icon">
+                    <!-- clock -->
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="kpi-label">Most Affected Age</div>
+                <div class="kpi-value">65-74 yrs</div>
             </div>
-            <div class="d-row">
-              <div class="d-label" style="color:var(--red)">Distant</div>
-              <div class="d-bar-bg"><div class="d-bar" style="width:34%;background:var(--red)"></div></div>
-              <div class="d-val">~34%</div>
+
+            <div class="kpi-card red">
+                <div class="kpi-icon">
+                    <!-- alert triangle -->
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <div class="kpi-label">Black vs White Inc.</div>
+                <div class="kpi-value">1.6x Higher</div>
             </div>
-          </div>
-          <p style="font-size:12px;color:var(--subtext);margin-top:8px;">Source: SEER 5-year relative survival estimates.</p>
-        </div>
 
-        <div class="insight-card callout blue">
-          <strong>💬 What this means:</strong> When prostate cancer is caught early (localized), survival is nearly 100%. When caught at a distant stage, outcomes are far worse. This is why the debate over PSA screening has real stakes.
-        </div>
-
-        <div class="insight-card">
-          <h3>🩺 Talk to Your Doctor</h3>
-          <p>If you're 50–69, a shared decision-making conversation about PSA testing is recommended. Ask about your individual risk factors, including family history and race.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── TAB 4: STATES ── -->
-  <div class="tab-panel" id="tab-states">
-    <div class="panel-grid">
-      <div>
-        <div class="chart-card">
-          <h2>Prostate Cancer Rates by State</h2>
-          <p class="subtitle">Age-adjusted incidence and mortality rates per 100,000 men · Top 20 states ranked by incidence</p>
-          <div class="chart-wrap" style="height:480px"><canvas id="stateChart"></canvas></div>
-          <div class="legend">
-            <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Incidence Rate</div>
-            <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Mortality Rate</div>
-          </div>
-          <div class="source-strip">
-            <span class="tech-badge scrape">🕷 Scraped</span> CDC WONDER &amp; NCI state profiles
-            <span class="tech-badge mine">⛏ Mined</span> State clustering: High/Low burden profiles
-            <span class="tech-badge viz">📊 Viz</span> Horizontal bar chart
-          </div>
-        </div>
-      </div>
-
-      <div class="sidebar">
-        <div class="insight-card">
-          <h3>🗺️ Geographic Patterns</h3>
-          <p style="font-size:14px;line-height:1.6;">Southern states consistently show the <strong>highest incidence and mortality</strong>. This reflects a combination of racial demographics, healthcare access, and screening patterns — not just where you live.</p>
-        </div>
-
-        <div class="insight-card">
-          <h3>📌 State Clusters</h3>
-          <div style="font-size:13px;margin-top:4px;">
-            <div style="padding:8px;border-radius:6px;background:#fdf2f2;margin-bottom:8px;">
-              <strong style="color:var(--red)">🔴 High Burden:</strong><br>
-              Louisiana, Mississippi, DC, Alabama, South Carolina
+            <div class="kpi-card purple">
+                <div class="kpi-icon">
+                    <!-- user / person -->
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div class="kpi-label">Lifetime Risk (1 in)</div>
+                <div class="kpi-value">8 Men</div>
             </div>
-            <div style="padding:8px;border-radius:6px;background:#eafaf1;margin-bottom:8px;">
-              <strong style="color:var(--green)">🟢 Lower Burden:</strong><br>
-              Utah, Colorado, Hawaii, New Mexico
+
+            <div class="kpi-card">
+                <div class="kpi-icon">
+                    <!-- trending up -->
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                </div>
+                <div class="kpi-label">Cases Diagnosed (2022)</div>
+                <div class="kpi-value">248K</div>
             </div>
-            <div style="padding:8px;border-radius:6px;background:var(--sky);">
-              <strong style="color:var(--blue)">🔵 Mid Burden:</strong><br>
-              California, New York, Texas
+
+            <div class="kpi-card green">
+                <div class="kpi-icon">
+                    <!-- shield -->
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div class="kpi-label">Early Detection Rate</div>
+                <div class="kpi-value">84%</div>
             </div>
-          </div>
+
         </div>
 
-        <div class="insight-card callout blue">
-          <strong>🔍 Data Mining Insight:</strong> States with higher proportions of Black residents tend to have higher overall rates — reinforcing that geographic variation is closely linked to racial disparity, not just regional environment.
+        <div class="two-chart-row">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3 class="chart-title">Incidence Trends (2000-2022)</h3>
+                </div>
+                <div id="chart-trends-preview" style="height: 300px;"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3 class="chart-title">Survival by Stage</h3>
+                </div>
+                <div id="chart-survival-preview" style="height: 300px;"></div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ── TAB 5: INSIGHTS ── -->
-  <div class="tab-panel" id="tab-insights">
-    <div style="margin-bottom:22px;">
-      <h2 style="font-size:22px;color:var(--navy);margin-bottom:6px;">What This Means for Men Ages 50–65</h2>
-      <p style="color:var(--subtext);font-size:15px;">Plain-language takeaways based on population-level data. This is not medical advice — always consult your doctor.</p>
+        <div class="insight-box amber">
+            <div class="insight-title">
+                <!-- bar chart sm -->
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
+                Key Finding
+            </div>
+            <div class="insight-text">Incidence rates peaked in 2022, rebounding from a 2013 low of 84.2/100K. This reflects increased screening and PSA testing adoption. Meanwhile, mortality has remained relatively stable around 19-20/100K, suggesting improved treatment outcomes.</div>
+        </div>
     </div>
 
-    <div class="insights-grid">
+    <!-- ── TRENDS TAB ─────────────────────────────────────────────── -->
+    <div id="trends" class="tab-content">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title">Incidence &amp; Mortality Trends by Stage</h3>
+                <div class="select-wrapper" style="width: 200px;">
+                    <select id="stage-filter">
+                        <option value="all">All Stages</option>
+                        <option value="localized">Localized Only</option>
+                        <option value="distant">Distant Only</option>
+                        <option value="regional">Regional Only</option>
+                    </select>
+                </div>
+            </div>
+            <div id="chart-trends-full" style="height: 500px;"></div>
+        </div>
 
-      <div class="insight-big">
-        <div class="icon">📊</div>
-        <div><span class="tag important">Important</span></div>
-        <h3>How Common Is Prostate Cancer?</h3>
-        <p>About <strong>1 in 8 men</strong> will be diagnosed with prostate cancer in their lifetime. It is the <strong>most common cancer</strong> in American men (excluding skin cancer), and the second-leading cause of cancer death.</p>
-        <p>But it's also one of the most <strong>treatable cancers</strong> when caught early — 5-year survival for localized disease is approximately 99%.</p>
-      </div>
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title">Incidence by Stage Over Time (Area)</h3>
+            </div>
+            <div id="chart-stages-area" style="height: 400px;"></div>
+        </div>
 
-      <div class="insight-big">
-        <div class="icon">🩺</div>
-        <div><span class="tag caution">Your Age Group</span></div>
-        <h3>Should You Get Screened?</h3>
-        <p>The USPSTF recommends that men aged <strong>55 to 69</strong> make an <em>individual decision</em> about PSA testing with their doctor, weighing personal risk factors, values, and preferences.</p>
-        <p>For men <strong>70 and older</strong>, routine PSA screening is generally not recommended, as potential harms outweigh benefits.</p>
-        <button class="cta-btn" onclick="alert('Talk to your primary care provider about whether PSA testing is right for you.')">
-          💬 Ask Your Doctor About PSA Testing
-        </button>
-      </div>
-
-      <div class="insight-big">
-        <div class="icon">⚠️</div>
-        <div><span class="tag important">High Risk Groups</span></div>
-        <h3>Who Faces the Highest Risk?</h3>
-        <p>You may be at higher risk if:</p>
-        <ul style="margin-top:8px;margin-left:16px;">
-          <li><strong>You are Black / African American</strong> — 1.7× more likely to be diagnosed, 2.1× more likely to die from it</li>
-          <li><strong>You have a family history</strong> — father or brother diagnosed, especially before age 65</li>
-          <li><strong>You are over 50</strong> — risk increases sharply with age</li>
-        </ul>
-        <p style="margin-top:10px;">If any of these apply, earlier screening conversations may be warranted.</p>
-      </div>
-
-      <div class="insight-big">
-        <div class="icon">📉</div>
-        <div><span class="tag good">Good News</span></div>
-        <h3>The Mortality Trend Is Improving</h3>
-        <p>Prostate cancer mortality has fallen by more than <strong>50%</strong> since its peak in the early 1990s — largely due to earlier detection and improved treatments.</p>
-        <p>However, <strong>late-stage diagnoses are rising again</strong> since 2012, which may eventually reverse some of this progress if screening declines further.</p>
-      </div>
-
-      <div class="insight-big">
-        <div class="icon">🌍</div>
-        <div><span class="tag caution">Where You Live Matters</span></div>
-        <h3>Geography and Access Affect Outcomes</h3>
-        <p>Southern states have significantly higher prostate cancer mortality than Western states. These differences largely reflect <strong>disparities in healthcare access</strong>, screening availability, and the demographics of each region.</p>
-        <p>If you live in a high-burden state, proactive screening conversations are especially important.</p>
-      </div>
-
-      <div class="insight-big">
-        <div class="icon">🔬</div>
-        <div><span class="tag good">Treatment Is Improving</span></div>
-        <h3>Modern Treatment Options</h3>
-        <p>Treatment for prostate cancer has advanced significantly. Options range from <strong>active surveillance</strong> (watchful waiting for slow-growing tumors) to surgery, radiation, hormone therapy, and newer targeted therapies.</p>
-        <p>Not all prostate cancers need immediate treatment — some are slow-growing and may never cause symptoms. A diagnosis is not automatically an emergency.</p>
-      </div>
-
+        <div class="insight-box green">
+            <div class="insight-title">
+                <!-- search -->
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Clinical Implications
+            </div>
+            <div class="insight-text">The dramatic decline in localized diagnoses (2000-2013) reflects the 2012 USPSTF recommendation against PSA screening for average-risk men. The subsequent rise (2015+) indicates renewed clinical interest and informed screening decisions among eligible populations.</div>
+        </div>
     </div>
 
-    <div style="margin-top:28px;padding:20px 24px;background:white;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);display:flex;align-items:flex-start;gap:16px;">
-      <div style="font-size:32px;flex-shrink:0;">📎</div>
-      <div>
-        <h3 style="font-size:16px;color:var(--navy);margin-bottom:6px;">About This Dashboard</h3>
-        <p style="font-size:14px;color:var(--subtext);line-height:1.6;">
-          This dashboard was developed as a GWU Data Science Capstone project. Data visualized here are modeled on publicly available cancer surveillance sources including the NCI SEER Program, CDC WONDER, and USPSTF guidelines. Web scraping was used to collect current ACS statistics and USPSTF policy dates. Data mining techniques including trend analysis, rate-ratio computation, and cluster profiling were applied to surface key patterns. All findings should be interpreted as population-level estimates — individual risk varies. <strong>This is not medical advice.</strong>
-        </p>
-      </div>
+    <!-- ── DISPARITIES TAB ────────────────────────────────────────── -->
+    <div id="disparities" class="tab-content">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title">Incidence and Mortality by Race/Ethnicity (2022)</h3>
+                <div class="button-group">
+                    <button class="btn active" data-metric="incidence">Incidence</button>
+                    <button class="btn" data-metric="mortality">Mortality</button>
+                </div>
+            </div>
+            <div id="chart-race-bar" style="height: 400px;"></div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title">Race-Specific Trends (2000-2022)</h3>
+            </div>
+            <div id="chart-race-trends" style="height: 400px;"></div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title">Burden of Illness: Incidence vs Mortality by Race</h3>
+            </div>
+            <div id="chart-bubble" style="height: 400px;"></div>
+        </div>
+
+        <div class="insight-box red">
+            <div class="insight-title">
+                <!-- alert triangle -->
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Health Disparity
+            </div>
+            <div class="insight-text">Non-Hispanic Black men experience a 60% higher incidence rate (175.2/100K) and 109% higher mortality rate (37.9/100K) compared to Non-Hispanic White men. This disparity reflects differences in screening access, treatment patterns, and potential biological factors.</div>
+        </div>
     </div>
-  </div>
 
-</main>
+    <!-- ── GEOGRAPHY TAB ──────────────────────────────────────────── -->
+    <div id="geography" class="tab-content">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title">Geographic Variation in Prostate Cancer Rates by US State</h3>
+                <div class="button-group">
+                    <button class="btn active" data-metric="incidence">Incidence</button>
+                    <button class="btn" data-metric="mortality">Mortality</button>
+                </div>
+            </div>
+            <div id="chart-map" style="height: 600px;"></div>
+        </div>
 
-<!-- ═══════════ JAVASCRIPT ═══════════ -->
+        <div class="insight-box amber">
+            <div class="insight-title">
+                <!-- map -->
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+                Regional Patterns
+            </div>
+            <div class="insight-text">Southeastern and Mid-Atlantic states show higher incidence and mortality rates. Potential factors include older populations, differential screening practices, healthcare access, and socioeconomic factors. Western states generally show lower rates.</div>
+        </div>
+    </div>
+
+    <!-- ── SURVIVAL & AGE TAB ─────────────────────────────────────── -->
+    <div id="survival" class="tab-content">
+        <h2 class="section-heading">Survival and Age Distribution</h2>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title">5-Year Relative Survival Rate by Stage at Diagnosis</h3>
+            </div>
+            <div id="chart-survival-bar" style="height: 300px;"></div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title">Age Distribution of Prostate Cancer Cases</h3>
+            </div>
+            <div id="chart-age-dist" style="height: 350px;"></div>
+        </div>
+
+        <div class="insight-box green">
+            <div class="insight-title">
+                <!-- check circle -->
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+                Early Detection Saves Lives
+            </div>
+            <div class="insight-text">Nearly 100% of men diagnosed with localized prostate cancer survive 5+ years. In contrast, those with distant (metastatic) disease at diagnosis have only 38% survival. This stark difference underscores the critical importance of early detection and screening in eligible populations.</div>
+        </div>
+    </div>
+
+    <!-- ── YOUR RISK TAB ──────────────────────────────────────────── -->
+    <div id="risk" class="tab-content">
+        <h2 class="section-heading">Personalized Risk Assessment</h2>
+
+        <div class="your-risk-form">
+            <div class="form-group">
+                <label class="form-label">Age Group</label>
+                <div class="select-wrapper">
+                    <select id="risk-age">
+                        <option value="45-54">45-54 years</option>
+                        <option value="55-64">55-64 years</option>
+                        <option value="65-74">65-74 years</option>
+                        <option value="75-84">75-84 years</option>
+                        <option value="<45">&lt;45 years</option>
+                        <option value="85+">85+ years</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Race/Ethnicity</label>
+                <div class="select-wrapper">
+                    <select id="risk-race">
+                        <option value="Non-Hispanic White">Non-Hispanic White</option>
+                        <option value="Non-Hispanic Black">Non-Hispanic Black</option>
+                        <option value="Hispanic">Hispanic</option>
+                        <option value="NH Asian/PI">NH Asian/Pacific Islander</option>
+                        <option value="NH AIAN">NH American Indian/Alaska Native</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="risk-cards">
+            <div class="risk-card">
+                <div class="risk-card-label">Lifetime Risk</div>
+                <div class="risk-card-value" id="risk-lifetime">1 in 8</div>
+            </div>
+            <div class="risk-card">
+                <div class="risk-card-label">Incidence Rate (your race)</div>
+                <div class="risk-card-value" id="risk-incidence" style="font-size: 1.5rem;">109.3</div>
+            </div>
+            <div class="risk-card">
+                <div class="risk-card-label">Mortality Rate (your race)</div>
+                <div class="risk-card-value" id="risk-mortality" style="font-size: 1.5rem;">18.1</div>
+            </div>
+            <div class="risk-card">
+                <div class="risk-card-label">% of Cases in Your Age</div>
+                <div class="risk-card-value" id="risk-age-pct" style="font-size: 1.5rem;">30.5%</div>
+            </div>
+            <div class="risk-card">
+                <div class="risk-card-label">Survival if Early Stage</div>
+                <div class="risk-card-value" style="font-size: 1.5rem; color: #8A9A8B;">~100%</div>
+            </div>
+            <div class="risk-card">
+                <div class="risk-card-label">Survival if Advanced</div>
+                <div class="risk-card-value" style="font-size: 1.5rem; color: #C17F5C;">38%</div>
+            </div>
+        </div>
+
+        <div class="screening-guidance">
+            <div class="guidance-box">
+                <div class="guidance-title">
+                    <!-- clipboard -->
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                    Screening Recommendations
+                </div>
+                <div class="guidance-text" id="screening-note">
+                    For average-risk men: Discuss PSA screening at age 55-69. Decision should be individualized after discussion with your healthcare provider about benefits and risks.
+                </div>
+            </div>
+            <div class="guidance-box">
+                <div class="guidance-title">
+                    <!-- info circle -->
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    Risk Factors
+                </div>
+                <div class="guidance-text">
+                    Age (risk increases after 65), race/ethnicity (Black men have higher risk), family history (first-degree relative with prostate cancer), and obesity may increase risk.
+                </div>
+            </div>
+            <div class="guidance-box">
+                <div class="guidance-title">
+                    <!-- arrow right -->
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    Take Action
+                </div>
+                <div class="guidance-text">
+                    Talk to your healthcare provider about your individual risk. Screening decisions should balance early detection benefits against potential harms like false positives and overtreatment.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── SOURCES TAB ────────────────────────────────────────────── -->
+    <div id="sources" class="tab-content">
+        <h2 class="section-heading">Data Sources &amp; References</h2>
+        <div class="sources-grid">
+            <div class="source-card">
+                <div class="source-title">National Cancer Institute (NCI)</div>
+                <div class="source-text">Surveillance, Epidemiology, and End Results (SEER) database providing comprehensive cancer statistics and incidence/mortality trends.</div>
+                <a href="https://seer.cancer.gov/" class="source-link">seer.cancer.gov</a>
+            </div>
+            <div class="source-card">
+                <div class="source-title">CDC Cancer Statistics Center</div>
+                <div class="source-text">Centers for Disease Control and Prevention data on cancer incidence, mortality, and disparities across the United States.</div>
+                <a href="https://www.cdc.gov/cancer/" class="source-link">cdc.gov/cancer</a>
+            </div>
+            <div class="source-card">
+                <div class="source-title">USPSTF Screening Guidelines</div>
+                <div class="source-text">U.S. Preventive Services Task Force recommendations on prostate cancer screening for asymptomatic men.</div>
+                <a href="https://www.uspreventiveservicestaskforce.org/" class="source-link">uspreventiveservicestaskforce.org</a>
+            </div>
+            <div class="source-card">
+                <div class="source-title">American Cancer Society</div>
+                <div class="source-text">Comprehensive prostate cancer statistics, screening recommendations, and patient education resources.</div>
+                <a href="https://www.cancer.org/" class="source-link">cancer.org</a>
+            </div>
+            <div class="source-card">
+                <div class="source-title">National Center for Health Statistics (NCHS)</div>
+                <div class="source-text">NCHS mortality data and health disparities by race, ethnicity, and geography from CDC.</div>
+                <a href="https://www.cdc.gov/nchs/" class="source-link">cdc.gov/nchs</a>
+            </div>
+            <div class="source-card">
+                <div class="source-title">Plotly.js Charting Library</div>
+                <div class="source-text">Interactive visualization library used to create all dashboard charts and graphs.</div>
+                <a href="https://plotly.com/javascript/" class="source-link">plotly.com/javascript</a>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="insight-box">
+            <div class="insight-title">
+                <!-- file text -->
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Data Note
+            </div>
+            <div class="insight-text">This dashboard presents aggregated epidemiological data from 2000-2022. All incidence rates are age-adjusted per 100,000 population. Rates are based on the most recent available data from SEER and CDC sources. This is an educational tool for a data science capstone project and should not replace professional medical advice.</div>
+        </div>
+    </div>
+
+</div><!-- /container -->
+
+<div class="footer">
+    <p>Prostate Cancer Statistics Dashboard &nbsp;&middot;&nbsp; Data Science Capstone Project &nbsp;&middot;&nbsp; College Senior Edition</p>
+    <p>Last updated: March 2026 &nbsp;&middot;&nbsp; Data sources: SEER, CDC, NCHS</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!--  EMBEDDED DATA + CHARTS                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
 <script>
-// ─── DATA ───────────────────────────────────────────────────────────────────
-const YEARS = Array.from({length: 32}, (_, i) => 1990 + i);
+    const RAW = {
+      incidence: [{"year":2000,"stage":"Localized","rate":153.1},{"year":2001,"stage":"Localized","rate":149.8},{"year":2002,"stage":"Localized","rate":148.2},{"year":2003,"stage":"Localized","rate":143.5},{"year":2004,"stage":"Localized","rate":140.2},{"year":2005,"stage":"Localized","rate":136.8},{"year":2006,"stage":"Localized","rate":132.4},{"year":2007,"stage":"Localized","rate":128.9},{"year":2008,"stage":"Localized","rate":118.4},{"year":2009,"stage":"Localized","rate":112.6},{"year":2010,"stage":"Localized","rate":106.3},{"year":2011,"stage":"Localized","rate":102.1},{"year":2012,"stage":"Localized","rate":91.8},{"year":2013,"stage":"Localized","rate":84.2},{"year":2014,"stage":"Localized","rate":76.2},{"year":2015,"stage":"Localized","rate":78.4},{"year":2016,"stage":"Localized","rate":80.1},{"year":2017,"stage":"Localized","rate":82.7},{"year":2018,"stage":"Localized","rate":84.5},{"year":2019,"stage":"Localized","rate":86.2},{"year":2020,"stage":"Localized","rate":82.1},{"year":2021,"stage":"Localized","rate":88.3},{"year":2022,"stage":"Localized","rate":91.0},{"year":2000,"stage":"Distant","rate":8.4},{"year":2001,"stage":"Distant","rate":8.2},{"year":2002,"stage":"Distant","rate":7.9},{"year":2003,"stage":"Distant","rate":7.6},{"year":2004,"stage":"Distant","rate":7.1},{"year":2005,"stage":"Distant","rate":6.9},{"year":2006,"stage":"Distant","rate":6.8},{"year":2007,"stage":"Distant","rate":6.6},{"year":2008,"stage":"Distant","rate":6.5},{"year":2009,"stage":"Distant","rate":6.4},{"year":2010,"stage":"Distant","rate":6.2},{"year":2011,"stage":"Distant","rate":6.4},{"year":2012,"stage":"Distant","rate":6.8},{"year":2013,"stage":"Distant","rate":7.1},{"year":2014,"stage":"Distant","rate":7.4},{"year":2015,"stage":"Distant","rate":7.9},{"year":2016,"stage":"Distant","rate":8.2},{"year":2017,"stage":"Distant","rate":8.8},{"year":2018,"stage":"Distant","rate":9.5},{"year":2019,"stage":"Distant","rate":10.1},{"year":2020,"stage":"Distant","rate":10.8},{"year":2021,"stage":"Distant","rate":11.9},{"year":2022,"stage":"Distant","rate":12.6},{"year":2000,"stage":"Regional","rate":14.2},{"year":2002,"stage":"Regional","rate":13.8},{"year":2004,"stage":"Regional","rate":13.1},{"year":2006,"stage":"Regional","rate":12.4},{"year":2008,"stage":"Regional","rate":11.8},{"year":2010,"stage":"Regional","rate":11.2},{"year":2012,"stage":"Regional","rate":10.6},{"year":2014,"stage":"Regional","rate":9.8},{"year":2016,"stage":"Regional","rate":9.5},{"year":2018,"stage":"Regional","rate":9.8},{"year":2020,"stage":"Regional","rate":10.1},{"year":2022,"stage":"Regional","rate":10.4}],
+      mortality: [{"year":1999,"rate":33.2},{"year":2000,"rate":31.8},{"year":2001,"rate":30.4},{"year":2002,"rate":28.9},{"year":2003,"rate":27.5},{"year":2004,"rate":26.1},{"year":2005,"rate":25.0},{"year":2006,"rate":23.8},{"year":2007,"rate":22.7},{"year":2008,"rate":21.9},{"year":2009,"rate":21.1},{"year":2010,"rate":20.6},{"year":2011,"rate":20.0},{"year":2012,"rate":19.8},{"year":2013,"rate":19.5},{"year":2014,"rate":19.3},{"year":2015,"rate":19.1},{"year":2016,"rate":19.0},{"year":2017,"rate":19.2},{"year":2018,"rate":19.3},{"year":2019,"rate":19.4},{"year":2020,"rate":19.6},{"year":2021,"rate":19.5},{"year":2022,"rate":19.6}],
+      survival: [{"stage":"Localized","pct":99.9,"cases":76},{"stage":"Regional","pct":99.9,"cases":13},{"stage":"Distant","pct":38.0,"cases":8},{"stage":"Unknown","pct":77.6,"cases":3}],
+      age: [{"group":"<45","pct":0.6,"target":false},{"group":"45-54","pct":8.6,"target":true},{"group":"55-64","pct":30.5,"target":true},{"group":"65-74","pct":36.1,"target":false},{"group":"75-84","pct":18.9,"target":false},{"group":"85+","pct":5.3,"target":false}],
+      race: [{"name":"Non-Hispanic Black","inc":175.2,"mort":37.9},{"name":"Non-Hispanic White","inc":109.3,"mort":18.1},{"name":"Hispanic","inc":96.4,"mort":15.8},{"name":"NH Asian/PI","inc":60.3,"mort":9.2},{"name":"NH AIAN","inc":78.2,"mort":22.4}],
+      race_trends: [{"year":2000,"race":"Non-Hispanic Black","rate":228.5},{"year":2004,"race":"Non-Hispanic Black","rate":210.3},{"year":2008,"race":"Non-Hispanic Black","rate":190.1},{"year":2012,"race":"Non-Hispanic Black","rate":185.4},{"year":2014,"race":"Non-Hispanic Black","rate":172.6},{"year":2016,"race":"Non-Hispanic Black","rate":170.2},{"year":2018,"race":"Non-Hispanic Black","rate":171.8},{"year":2020,"race":"Non-Hispanic Black","rate":172.5},{"year":2022,"race":"Non-Hispanic Black","rate":175.2},{"year":2000,"race":"Non-Hispanic White","rate":152.1},{"year":2004,"race":"Non-Hispanic White","rate":138.4},{"year":2008,"race":"Non-Hispanic White","rate":118.2},{"year":2012,"race":"Non-Hispanic White","rate":96.4},{"year":2014,"race":"Non-Hispanic White","rate":82.1},{"year":2016,"race":"Non-Hispanic White","rate":87.3},{"year":2018,"race":"Non-Hispanic White","rate":94.5},{"year":2020,"race":"Non-Hispanic White","rate":98.2},{"year":2022,"race":"Non-Hispanic White","rate":109.3},{"year":2000,"race":"Hispanic","rate":110.2},{"year":2004,"race":"Hispanic","rate":104.6},{"year":2008,"race":"Hispanic","rate":98.1},{"year":2012,"race":"Hispanic","rate":89.4},{"year":2014,"race":"Hispanic","rate":82.5},{"year":2016,"race":"Hispanic","rate":80.1},{"year":2018,"race":"Hispanic","rate":88.4},{"year":2020,"race":"Hispanic","rate":90.2},{"year":2022,"race":"Hispanic","rate":96.4},{"year":2000,"race":"NH Asian/PI","rate":66.2},{"year":2004,"race":"NH Asian/PI","rate":62.1},{"year":2008,"race":"NH Asian/PI","rate":58.4},{"year":2012,"race":"NH Asian/PI","rate":52.1},{"year":2014,"race":"NH Asian/PI","rate":48.3},{"year":2016,"race":"NH Asian/PI","rate":51.2},{"year":2018,"race":"NH Asian/PI","rate":54.8},{"year":2020,"race":"NH Asian/PI","rate":57.1},{"year":2022,"race":"NH Asian/PI","rate":60.3}],
+      states: [{"state":"Alabama","abbr":"AL","inc":125.4,"mort":26.8},{"state":"Alaska","abbr":"AK","inc":98.2,"mort":17.4},{"state":"Arizona","abbr":"AZ","inc":104.8,"mort":18.2},{"state":"Arkansas","abbr":"AR","inc":120.1,"mort":24.5},{"state":"California","abbr":"CA","inc":100.3,"mort":16.8},{"state":"Colorado","abbr":"CO","inc":99.4,"mort":16.2},{"state":"Connecticut","abbr":"CT","inc":118.6,"mort":20.1},{"state":"Delaware","abbr":"DE","inc":122.4,"mort":23.6},{"state":"Florida","abbr":"FL","inc":113.2,"mort":21.4},{"state":"Georgia","abbr":"GA","inc":128.6,"mort":27.9},{"state":"Hawaii","abbr":"HI","inc":72.4,"mort":12.1},{"state":"Idaho","abbr":"ID","inc":98.7,"mort":17.8},{"state":"Illinois","abbr":"IL","inc":118.4,"mort":22.6},{"state":"Indiana","abbr":"IN","inc":114.2,"mort":21.8},{"state":"Iowa","abbr":"IA","inc":106.8,"mort":19.4},{"state":"Kansas","abbr":"KS","inc":109.2,"mort":20.1},{"state":"Kentucky","abbr":"KY","inc":118.6,"mort":23.4},{"state":"Louisiana","abbr":"LA","inc":138.4,"mort":31.2},{"state":"Maine","abbr":"ME","inc":116.2,"mort":20.8},{"state":"Maryland","abbr":"MD","inc":126.8,"mort":25.4},{"state":"Massachusetts","abbr":"MA","inc":121.4,"mort":19.8},{"state":"Michigan","abbr":"MI","inc":118.6,"mort":22.4},{"state":"Minnesota","abbr":"MN","inc":105.8,"mort":17.6},{"state":"Mississippi","abbr":"MS","inc":142.1,"mort":32.6},{"state":"Missouri","abbr":"MO","inc":112.4,"mort":21.8},{"state":"Montana","abbr":"MT","inc":98.4,"mort":17.2},{"state":"Nebraska","abbr":"NE","inc":108.6,"mort":19.8},{"state":"Nevada","abbr":"NV","inc":102.4,"mort":18.6},{"state":"New Hampshire","abbr":"NH","inc":114.8,"mort":19.2},{"state":"New Jersey","abbr":"NJ","inc":122.6,"mort":22.8},{"state":"New Mexico","abbr":"NM","inc":94.2,"mort":16.4},{"state":"New York","abbr":"NY","inc":116.8,"mort":21.2},{"state":"North Carolina","abbr":"NC","inc":128.4,"mort":26.1},{"state":"North Dakota","abbr":"ND","inc":104.2,"mort":18.8},{"state":"Ohio","abbr":"OH","inc":116.8,"mort":22.1},{"state":"Oklahoma","abbr":"OK","inc":116.2,"mort":22.8},{"state":"Oregon","abbr":"OR","inc":98.6,"mort":16.8},{"state":"Pennsylvania","abbr":"PA","inc":120.4,"mort":22.6},{"state":"Rhode Island","abbr":"RI","inc":118.2,"mort":20.4},{"state":"South Carolina","abbr":"SC","inc":132.6,"mort":28.4},{"state":"South Dakota","abbr":"SD","inc":106.4,"mort":19.2},{"state":"Tennessee","abbr":"TN","inc":122.8,"mort":25.1},{"state":"Texas","abbr":"TX","inc":106.8,"mort":19.4},{"state":"Utah","abbr":"UT","inc":93.8,"mort":14.2},{"state":"Vermont","abbr":"VT","inc":112.4,"mort":18.8},{"state":"Virginia","abbr":"VA","inc":122.6,"mort":23.8},{"state":"Washington","abbr":"WA","inc":98.4,"mort":16.6},{"state":"West Virginia","abbr":"WV","inc":118.4,"mort":24.2},{"state":"Wisconsin","abbr":"WI","inc":110.2,"mort":19.6},{"state":"Wyoming","abbr":"WY","inc":96.8,"mort":17.4},{"state":"District of Columbia","abbr":"DC","inc":148.2,"mort":38.6}]
+    };
 
-const INCIDENCE = {
-  overall:  [142,157,183,190,176,165,160,155,152,153,158,163,164,159,158,156,154,151,148,152,150,149,148,120,105,100,98,99,103,110,95,108],
-  black:    [210,232,268,278,257,242,235,228,223,225,232,239,241,234,232,229,226,222,217,223,220,218,217,178,156,148,145,147,152,163,142,160],
-  white:    [136,150,175,182,168,158,153,148,145,146,151,156,157,152,151,149,147,144,141,145,143,142,141,114,100,95,93,94,98,105,90,103],
-  hispanic: [89,98,114,119,110,103,100,97,95,96,99,102,103,100,99,98,96,94,92,95,94,93,92,75,66,63,61,62,65,69,60,68],
-  asian:    [58,64,75,78,72,67,65,63,62,62,64,66,67,65,64,63,63,61,60,62,61,60,60,49,43,41,40,40,42,45,39,44]
-};
+    const plotConfig = {
+        responsive: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: ['lasso2d', 'select2d']
+    };
 
-const MORTALITY = {
-  overall:  [31,34,37,40,39,38,36,34,32,31,30,29,28,27,26,25,24,23,22,22,21,21,20,20,20,20,19,19,19,19,18,19],
-  black:    [60,65,72,77,75,73,70,66,62,60,58,57,55,53,51,49,48,46,44,44,43,42,41,40,39,38,37,37,37,37,35,37],
-  white:    [28,31,34,37,36,35,33,31,29,28,28,27,26,25,24,23,22,21,20,20,20,19,19,18,18,18,17,17,17,17,16,17],
-  hispanic: [20,22,24,26,26,25,24,23,22,21,21,20,19,19,18,18,17,17,16,16,15,15,15,14,14,14,13,13,13,14,13,14],
-  asian:    [12,13,15,16,16,15,15,14,13,13,13,12,12,12,11,11,11,10,10,10,10,10,9,9,9,9,8,8,8,8,8,8]
-};
+    const layoutDefaults = {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: {family: 'Inter, sans-serif', color: '#2C2C2C'},
+        margin: {t:50, b:55, l:70, r:20},
+        xaxis: {gridcolor:'#EDE9E3', linecolor:'#D5CECA', tickcolor:'#ABA59F'},
+        yaxis: {gridcolor:'#EDE9E3', linecolor:'#D5CECA', tickcolor:'#ABA59F'},
+        hovermode: 'x unified'
+    };
 
-const STAGE_YEARS  = [1990,1995,2000,2005,2010,2012,2015,2018,2021];
-const STAGE_DATA   = {
-  localized: [58,68,73,79,81,82,76,73,72],
-  regional:  [21,16,14,11,11,11,13,14,13],
-  distant:   [19,13,10,7,5,5,8,10,11],
-  unknown:   [2,3,3,3,3,2,3,3,4]
-};
+    // ===== OVERVIEW TAB CHARTS =====
+    function renderTrendsPreview() {
+        const localized = RAW.incidence.filter(d => d.stage === 'Localized');
+        const distant   = RAW.incidence.filter(d => d.stage === 'Distant');
+        const trace1 = { x: localized.map(d => d.year), y: localized.map(d => d.rate), mode: 'lines', name: 'Localized', line: {color: '#8A9A8B', width: 2} };
+        const trace2 = { x: distant.map(d => d.year),   y: distant.map(d => d.rate),   mode: 'lines', name: 'Distant',   line: {color: '#C17F5C', width: 2} };
+        const layout = { ...layoutDefaults, title: 'Incidence Trends (2000-2022)', yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'} };
+        Plotly.newPlot('chart-trends-preview', [trace1, trace2], layout, plotConfig);
+    }
 
-const STATE_DATA = [
-  {s:'Louisiana',      inc:148, mor:31},
-  {s:'Mississippi',    inc:145, mor:29},
-  {s:'D.C.',           inc:143, mor:35},
-  {s:'Alabama',        inc:138, mor:28},
-  {s:'South Carolina', inc:135, mor:26},
-  {s:'Georgia',        inc:132, mor:25},
-  {s:'Maryland',       inc:130, mor:24},
-  {s:'North Carolina', inc:127, mor:24},
-  {s:'Virginia',       inc:125, mor:23},
-  {s:'Tennessee',      inc:122, mor:23},
-  {s:'Texas',          inc:118, mor:22},
-  {s:'Florida',        inc:115, mor:21},
-  {s:'New York',       inc:112, mor:21},
-  {s:'California',     inc:108, mor:20},
-  {s:'Illinois',       inc:106, mor:20},
-  {s:'Ohio',           inc:104, mor:20},
-  {s:'Michigan',       inc:103, mor:19},
-  {s:'Pennsylvania',   inc:102, mor:19},
-  {s:'Colorado',       inc:95,  mor:17},
-  {s:'Utah',           inc:88,  mor:15}
-];
+    function renderSurvivalPreview() {
+        const data = RAW.survival;
+        const trace = {
+            x: data.map(d => d.stage),
+            y: data.map(d => d.pct),
+            type: 'bar',
+            marker: { color: ['#8A9A8B', '#B5C1B6', '#C17F5C', '#C4B9A8'] },
+            text: data.map(d => d.pct.toFixed(1) + '%'),
+            textposition: 'inside',
+            textfont: {color: 'white', size: 12}
+        };
+        const layout = { ...layoutDefaults, title: '5-Year Survival by Stage', yaxis: {...layoutDefaults.yaxis, title: 'Survival %', range: [0, 105]} };
+        Plotly.newPlot('chart-survival-preview', [trace], layout, plotConfig);
+    }
 
-const RACE_LABELS = {overall:'All Men', black:'Black', white:'White', hispanic:'Hispanic', asian:'Asian/PI'};
-const RACE_COLORS = {overall:'#2471a3', black:'#1a5276', white:'#7fb3d3', hispanic:'#c27ba0', asian:'#82e0aa'};
+    // ===== TRENDS TAB CHARTS =====
+    let currentStageFilter = 'all';
 
-// ─── STATE ───────────────────────────────────────────────────────────────────
-let activeRace = 'overall';
-let yearFrom   = 1990;
-let yearTo     = 2021;
-let charts     = {};
+    function getIncidenceByStage(stage) {
+        if (stage === 'all') return RAW.incidence;
+        return RAW.incidence.filter(d => d.stage === stage);
+    }
 
-// ─── YEAR SELECTS ────────────────────────────────────────────────────────────
-(function buildYearSelects() {
-  const fromEl = document.getElementById('yearFrom');
-  const toEl   = document.getElementById('yearTo');
-  YEARS.forEach(y => {
-    fromEl.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
-    toEl.insertAdjacentHTML('beforeend',   `<option value="${y}">${y}</option>`);
-  });
-  fromEl.value = 1990;
-  toEl.value   = 2021;
-  fromEl.addEventListener('change', e => { yearFrom = +e.target.value; refreshAll(); });
-  toEl.addEventListener('change',   e => { yearTo   = +e.target.value; refreshAll(); });
-})();
+    function renderTrendsFull() {
+        const incData   = getIncidenceByStage(currentStageFilter);
+        const localized = incData.filter(d => d.stage === 'Localized');
+        const distant   = incData.filter(d => d.stage === 'Distant');
+        const regional  = incData.filter(d => d.stage === 'Regional');
 
-// ─── RACE BUTTONS ────────────────────────────────────────────────────────────
-document.querySelectorAll('.race-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.race-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeRace = btn.dataset.race;
-    refreshAll();
-  });
-});
+        const trace1 = { x: localized.map(d => d.year), y: localized.map(d => d.rate), mode: 'lines', name: 'Localized', line: {color: '#8A9A8B', width: 3}, visible: currentStageFilter === 'all' || currentStageFilter === 'localized' };
+        const trace2 = { x: distant.map(d => d.year),   y: distant.map(d => d.rate),   mode: 'lines', name: 'Distant',   line: {color: '#C17F5C', width: 3}, visible: currentStageFilter === 'all' || currentStageFilter === 'distant' };
+        const trace3 = { x: regional.map(d => d.year),  y: regional.map(d => d.rate),  mode: 'lines', name: 'Regional',  line: {color: '#C4A882', width: 3}, visible: currentStageFilter === 'all' || currentStageFilter === 'regional' };
+        const trace4 = { x: RAW.mortality.map(d => d.year), y: RAW.mortality.map(d => d.rate), mode: 'lines', name: 'Mortality', line: {color: '#9B8FAC', width: 3, dash: 'dash'} };
 
-// ─── TABS ─────────────────────────────────────────────────────────────────────
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-    setTimeout(() => { Object.values(charts).forEach(c => c && c.resize && c.resize()); }, 50);
-  });
-});
+        const layout = {
+            ...layoutDefaults,
+            title: 'Incidence & Mortality Trends by Stage (with USPSTF Recommendations)',
+            yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'},
+            shapes: [
+                { type: 'line', x0: 2012, x1: 2012, y0: 0, y1: 160, line: {color: '#C17F5C', width: 1.5, dash: 'dash'} },
+                { type: 'line', x0: 2018, x1: 2018, y0: 0, y1: 160, line: {color: '#C4A882', width: 1.5, dash: 'dash'} }
+            ],
+            annotations: [
+                { x: 2012, y: 155, text: '2012: USPSTF<br/>Recommendation', showarrow: false, font: {size: 10, color: '#C17F5C'}, xanchor: 'center' },
+                { x: 2018, y: 155, text: '2018: USPSTF<br/>Update',          showarrow: false, font: {size: 10, color: '#C4A882'}, xanchor: 'center' }
+            ]
+        };
+        Plotly.newPlot('chart-trends-full', [trace1, trace2, trace3, trace4], layout, plotConfig);
+    }
 
-// ─── HELPER: filter by year range ────────────────────────────────────────────
-function filtered(arr) {
-  return arr.filter((_, i) => YEARS[i] >= yearFrom && YEARS[i] <= yearTo);
-}
-function filteredYears() {
-  return YEARS.filter(y => y >= yearFrom && y <= yearTo);
-}
+    function renderStagesArea() {
+        const localized = RAW.incidence.filter(d => d.stage === 'Localized');
+        const distant   = RAW.incidence.filter(d => d.stage === 'Distant');
+        const trace1 = { x: localized.map(d => d.year), y: localized.map(d => d.rate), mode: 'lines', name: 'Localized', line: {color: '#8A9A8B', width: 2}, fill: 'tozeroy', fillcolor: 'rgba(138,154,139,0.12)' };
+        const trace2 = { x: distant.map(d => d.year),   y: distant.map(d => d.rate),   mode: 'lines', name: 'Distant',   line: {color: '#C17F5C', width: 2} };
+        const layout = {
+            ...layoutDefaults,
+            title: 'Incidence by Stage Over Time',
+            yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'},
+            shapes: [
+                { type: 'rect', x0: 2012, x1: 2014, y0: 0, y1: 160, fillcolor: 'rgba(193,127,92,0.07)',  line: {width: 0} },
+                { type: 'rect', x0: 2018, x1: 2020, y0: 0, y1: 160, fillcolor: 'rgba(196,168,130,0.07)', line: {width: 0} }
+            ]
+        };
+        Plotly.newPlot('chart-stages-area', [trace1, trace2], layout, plotConfig);
+    }
 
-// ─── VERTICAL LINE PLUGIN ────────────────────────────────────────────────────
-const vlinePlugin = {
-  id: 'vlines',
-  afterDraw(chart) {
-    const lines = chart.options.vlines;
-    if (!lines || !lines.length) return;
-    const {ctx, chartArea: {top, bottom}, scales: {x}} = chart;
-    lines.forEach(({value, color, label}) => {
-      const idx = filteredYears().indexOf(value);
-      if (idx < 0) return;
-      const xPos = x.getPixelForValue(idx);
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(xPos, top);
-      ctx.lineTo(xPos, bottom);
-      ctx.strokeStyle = color || '#e67e22';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 4]);
-      ctx.stroke();
-      if (label) {
-        ctx.fillStyle = color || '#e67e22';
-        ctx.font = 'bold 11px Segoe UI, Arial';
-        ctx.fillText(label, xPos + 4, top + 14);
-      }
-      ctx.restore();
+    // ===== DISPARITIES TAB CHARTS =====
+    let currentMetric = 'incidence';
+
+    function renderRaceBar() {
+        const metric = currentMetric;
+        const key    = metric === 'incidence' ? 'inc' : 'mort';
+        const names  = RAW.race.map(d => d.name).reverse();
+        const values = RAW.race.map(d => d[key]).reverse();
+        const avgValue = values.reduce((a, b) => a + b, 0) / values.length;
+
+        const trace = {
+            y: names, x: values, type: 'bar', orientation: 'h',
+            marker: { color: ['#C4B9A8', '#8A9A8B', '#5A7A5C', '#3D5E3F', '#2A4A2C'].reverse() },
+            text: values.map(v => v.toFixed(1)),
+            textposition: 'outside'
+        };
+        const layout = {
+            ...layoutDefaults,
+            margin: {t:50, b:55, l:180, r:100},
+            title: metric === 'incidence' ? 'Incidence Rate by Race/Ethnicity (2022)' : 'Mortality Rate by Race/Ethnicity (2022)',
+            xaxis: {...layoutDefaults.xaxis, title: metric === 'incidence' ? 'Incidence Rate per 100,000' : 'Mortality Rate per 100,000'},
+            yaxis: {gridcolor:'#EDE9E3'},
+            shapes: [{ type: 'line', x0: avgValue, x1: avgValue, y0: -0.5, y1: 4.5, line: {color: '#C4B9A8', width: 1.5, dash: 'dash'} }],
+            annotations: [{ x: avgValue, y: 4.7, text: 'National Avg', showarrow: false, font: {size: 10, color: '#ABA59F'} }]
+        };
+        Plotly.newPlot('chart-race-bar', [trace], layout, plotConfig);
+    }
+
+    function renderRaceTrends() {
+        const races  = ['Non-Hispanic Black', 'Non-Hispanic White', 'Hispanic', 'NH Asian/PI'];
+        const colors = ['#C17F5C', '#8A9A8B', '#C4A882', '#9B8FAC'];
+        const traces = races.map((race, idx) => {
+            const data = RAW.race_trends.filter(d => d.race === race).sort((a, b) => a.year - b.year);
+            return { x: data.map(d => d.year), y: data.map(d => d.rate), mode: 'lines+markers', name: race, line: {color: colors[idx], width: 2}, marker: {size: 5} };
+        });
+        const layout = {
+            ...layoutDefaults,
+            title: 'Incidence Trends by Race (2000-2022)',
+            yaxis: {...layoutDefaults.yaxis, title: 'Incidence Rate per 100,000'},
+            shapes: [
+                { type: 'line', x0: 2012, x1: 2012, y0: 40, y1: 240, line: {color: '#C17F5C', width: 1, dash: 'dash'} },
+                { type: 'line', x0: 2018, x1: 2018, y0: 40, y1: 240, line: {color: '#C4A882', width: 1, dash: 'dash'} }
+            ]
+        };
+        Plotly.newPlot('chart-race-trends', traces, layout, plotConfig);
+    }
+
+    function renderBubble() {
+        const trace = {
+            x: RAW.race.map(d => d.inc),
+            y: RAW.race.map(d => d.mort),
+            mode: 'markers+text',
+            type: 'scatter',
+            marker: { size: RAW.race.map(d => d.inc / 5), color: ['#C17F5C', '#8A9A8B', '#C4A882', '#9B8FAC', '#B5C1B6'], opacity: 0.75 },
+            text: RAW.race.map(d => d.name.split(' ').slice(-1)[0]),
+            textposition: 'middle center',
+            textfont: {size: 11, color: 'white'}
+        };
+        const layout = { ...layoutDefaults, title: 'Incidence vs Mortality by Race (Bubble Size = Incidence)', xaxis: {...layoutDefaults.xaxis, title: 'Incidence Rate (per 100,000)'}, yaxis: {...layoutDefaults.yaxis, title: 'Mortality Rate (per 100,000)'} };
+        Plotly.newPlot('chart-bubble', [trace], layout, plotConfig);
+    }
+
+    // ===== GEOGRAPHY TAB CHARTS =====
+    let currentGeoMetric = 'incidence';
+
+    function renderMap() {
+        const metric     = currentGeoMetric;
+        const key        = metric === 'incidence' ? 'inc' : 'mort';
+
+        // Compute national average and rank each state
+        const natAvg  = RAW.states.reduce((sum, d) => sum + d[key], 0) / RAW.states.length;
+        const ranked  = [...RAW.states].sort((a, b) => b[key] - a[key]);
+        const rankMap = {};
+        ranked.forEach((d, i) => { rankMap[d.abbr] = i + 1; });
+
+        // Pack extra data per state for the hover tooltip
+        const customdata = RAW.states.map(d => {
+            const pct  = ((d[key] - natAvg) / natAvg * 100);
+            const sign = pct >= 0 ? '+' : '';
+            return [
+                d.state,                          // [0] full name
+                d.inc.toFixed(1),                 // [1] incidence rate
+                d.mort.toFixed(1),                // [2] mortality rate
+                rankMap[d.abbr],                  // [3] rank
+                sign + pct.toFixed(1) + '%'       // [4] vs national avg
+            ];
+        });
+
+        const colorscale = metric === 'incidence'
+            ? [[0,'#EFF3EF'],[0.25,'#C8D9C9'],[0.5,'#8A9A8B'],[0.75,'#5A7A5C'],[1,'#2A4A2C']]
+            : [[0,'#FAF3EE'],[0.25,'#E8C9B0'],[0.5,'#C17F5C'],[0.75,'#9A5A35'],[1,'#6B3318']];
+
+        const trace = {
+            type: 'choropleth',
+            locationmode: 'USA-states',
+            locations: RAW.states.map(d => d.abbr),
+            z: RAW.states.map(d => d[key]),
+            customdata: customdata,
+            hovertemplate:
+                '<b style="font-size:14px">%{customdata[0]}</b><br>' +
+                '─────────────────<br>' +
+                'Incidence&nbsp;&nbsp;&nbsp;%{customdata[1]} / 100K<br>' +
+                'Mortality&nbsp;&nbsp;&nbsp;&nbsp;%{customdata[2]} / 100K<br>' +
+                '─────────────────<br>' +
+                'National rank&nbsp;&nbsp;#%{customdata[3]} of 51<br>' +
+                'vs. avg&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%{customdata[4]}' +
+                '<extra></extra>',
+            colorscale: colorscale,
+            zmin: Math.min(...RAW.states.map(d => d[key])),
+            zmax: Math.max(...RAW.states.map(d => d[key])),
+            colorbar: {
+                title: { text: 'Rate<br>per 100K', font: {size: 11, family: 'Inter, sans-serif'} },
+                thickness: 14,
+                len: 0.65,
+                x: 1.01,
+                tickfont: {size: 11, family: 'Inter, sans-serif'}
+            },
+            marker: { line: { color: '#FFFFFF', width: 1.2 } }
+        };
+
+        const layout = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            font: { family: 'Inter, sans-serif', color: '#2C2C2C' },
+            title: {
+                text: metric === 'incidence'
+                    ? 'Prostate Cancer Incidence by State (2022)'
+                    : 'Prostate Cancer Mortality by State (2022)',
+                font: { family: 'Playfair Display, Georgia, serif', size: 16, color: '#2C2C2C' },
+                x: 0.02, xanchor: 'left'
+            },
+            geo: {
+                scope: 'usa',
+                projection: { type: 'albers usa' },
+                bgcolor: 'rgba(0,0,0,0)',
+                landcolor: '#F0ECE6',
+                lakecolor: '#F7F5F2',
+                subunitcolor: '#FFFFFF',
+                showlakes: true,
+                showland: true,
+                showsubunits: true,
+                subunitwidth: 1.2
+            },
+            hoverlabel: {
+                bgcolor: '#2A2A28',
+                bordercolor: '#2A2A28',
+                font: { family: 'Inter, sans-serif', size: 12, color: '#F7F5F2' },
+                align: 'left'
+            },
+            hovermode: 'closest',
+            margin: { t: 55, b: 10, l: 10, r: 80 }
+        };
+
+        Plotly.newPlot('chart-map', [trace], layout, plotConfig);
+    }
+
+    // ===== SURVIVAL & AGE TAB CHARTS =====
+    function renderSurvivalBar() {
+        const data = RAW.survival;
+        const trace = {
+            y: data.map(d => d.stage), x: data.map(d => d.pct),
+            type: 'bar', orientation: 'h',
+            marker: { color: ['#8A9A8B', '#B5C1B6', '#C17F5C', '#C4B9A8'] },
+            text: data.map(d => d.pct.toFixed(1) + '%'),
+            textposition: 'inside', textfont: {color: 'white', size: 12}
+        };
+        const layout = { ...layoutDefaults, margin: {t:50, b:55, l:120, r:20}, title: '5-Year Survival by Stage at Diagnosis', xaxis: {...layoutDefaults.xaxis, title: 'Survival %', range: [0, 105]}, yaxis: {gridcolor:'#EDE9E3'} };
+        Plotly.newPlot('chart-survival-bar', [trace], layout, plotConfig);
+    }
+
+    function renderAgeDistribution() {
+        const data   = RAW.age;
+        const colors = data.map(d => d.target ? '#C17F5C' : '#D5CECA');
+        const trace  = { x: data.map(d => d.group), y: data.map(d => d.pct), type: 'bar', marker: {color: colors}, text: data.map(d => d.pct.toFixed(1) + '%'), textposition: 'outside' };
+        const layout = {
+            ...layoutDefaults,
+            title: 'Age Distribution of Cases (Screening Target Ages Highlighted)',
+            yaxis: {...layoutDefaults.yaxis, title: '% of Cases', range: [0, 40]},
+            annotations: [{ x: 1, y: 9.5, text: 'Target screening age', showarrow: true, arrowhead: 2, ax: 40, ay: -40, font: {size: 10, color: '#C17F5C'} }]
+        };
+        Plotly.newPlot('chart-age-dist', [trace], layout, plotConfig);
+    }
+
+    // ===== YOUR RISK TAB =====
+    function updateRiskPanel() {
+        const age      = document.getElementById('risk-age').value;
+        const race     = document.getElementById('risk-race').value;
+        const raceData = RAW.race.find(d => d.name === race);
+        const ageData  = RAW.age.find(d => d.group === age);
+
+        document.getElementById('risk-incidence').textContent = raceData.inc.toFixed(1);
+        document.getElementById('risk-mortality').textContent = raceData.mort.toFixed(1);
+        document.getElementById('risk-age-pct').textContent   = ageData.pct.toFixed(1) + '%';
+
+        const screeningNote = race === 'Non-Hispanic Black'
+            ? 'Talk to your doctor about screening at age 40-45. Earlier screening discussion recommended for Black men due to higher risk and incidence rates.'
+            : 'Discuss PSA screening at age 55-69. Decision should be individualized based on your personal risk factors and preferences.';
+        document.getElementById('screening-note').textContent = screeningNote;
+    }
+
+    // ===== TAB NAVIGATION =====
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.dataset.tab;
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            setTimeout(() => {
+                window.onPlotlyReady(function () {
+                    if      (tabName === 'overview')     { renderTrendsPreview(); renderSurvivalPreview(); }
+                    else if (tabName === 'trends')       { renderTrendsFull();    renderStagesArea(); }
+                    else if (tabName === 'disparities')  { renderRaceBar();       renderRaceTrends(); renderBubble(); }
+                    else if (tabName === 'geography')    { renderMap(); }
+                    else if (tabName === 'survival')     { renderSurvivalBar();   renderAgeDistribution(); }
+                });
+            }, 10);
+        });
     });
-  }
-};
-Chart.register(vlinePlugin);
 
-// ─── CHART 1: TRENDS ─────────────────────────────────────────────────────────
-function buildTrendsChart() {
-  const ctx = document.getElementById('trendsChart');
-  const yrs = filteredYears();
-  const inc = filtered(INCIDENCE[activeRace]);
-  const mor = filtered(MORTALITY[activeRace]);
+    // Stage filter
+    document.getElementById('stage-filter').addEventListener('change', (e) => {
+        currentStageFilter = e.target.value;
+        window.onPlotlyReady(function () { renderTrendsFull(); });
+    });
 
-  if (charts.trends) charts.trends.destroy();
-  charts.trends = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: yrs,
-      datasets: [
-        {
-          label: 'Incidence Rate',
-          data: inc,
-          borderColor: '#2471a3',
-          backgroundColor: 'rgba(36,113,163,.08)',
-          borderWidth: 3,
-          tension: 0.35,
-          fill: true,
-          pointRadius: 3,
-          pointHoverRadius: 6,
-          yAxisID: 'y'
-        },
-        {
-          label: 'Mortality Rate',
-          data: mor,
-          borderColor: '#c0392b',
-          backgroundColor: 'rgba(192,57,43,.06)',
-          borderWidth: 3,
-          tension: 0.35,
-          fill: true,
-          pointRadius: 3,
-          pointHoverRadius: 6,
-          yAxisID: 'y'
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {mode: 'index', intersect: false},
-      plugins: {
-        legend: {display: false},
-        tooltip: {
-          backgroundColor: '#1a3a5c',
-          titleFont: {size: 14, weight: 'bold'},
-          bodyFont: {size: 13},
-          padding: 12,
-          callbacks: {
-            title: (items) => `Year: ${items[0].label}`,
-            label: (item) => {
-              const label = item.dataset.label;
-              const val = item.parsed.y;
-              const plain = label === 'Incidence Rate'
-                ? `New diagnoses: ${val} per 100,000 men`
-                : `Deaths: ${val} per 100,000 men`;
-              return plain;
-            }
-          }
-        }
-      },
-      vlines: [
-        {value: 2012, color: '#e67e22', label: '2012 USPSTF'},
-        {value: 2018, color: '#8e44ad', label: '2018 USPSTF'}
-      ],
-      scales: {
-        x: {
-          grid: {color: 'rgba(0,0,0,.05)'},
-          ticks: {font: {size: 12}, maxRotation: 45}
-        },
-        y: {
-          grid: {color: 'rgba(0,0,0,.07)'},
-          ticks: {font: {size: 12}},
-          title: {display: true, text: 'Rate per 100,000 men', font: {size: 12}}
-        }
-      }
-    }
-  });
+    // Race metric toggle
+    document.querySelectorAll('[data-metric]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('[data-metric]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentMetric = btn.dataset.metric;
+            window.onPlotlyReady(function () { renderRaceBar(); });
+        });
+    });
 
-  // Update stat boxes
-  document.getElementById('stat-incidence').textContent = inc[inc.length - 1];
-  document.getElementById('stat-mortality').textContent = mor[mor.length - 1];
-}
+    // Geography metric toggle
+    document.querySelectorAll('#geography [data-metric]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#geography [data-metric]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentGeoMetric = btn.dataset.metric;
+            window.onPlotlyReady(function () { renderMap(); });
+        });
+    });
 
-// ─── CHART 2: RACE ───────────────────────────────────────────────────────────
-function buildRaceChart() {
-  const ctx = document.getElementById('raceChart');
-  const races = ['black','white','hispanic','asian','overall'];
-  const labels = races.map(r => RACE_LABELS[r]);
+    // Your Risk panel
+    document.getElementById('risk-age').addEventListener('change', updateRiskPanel);
+    document.getElementById('risk-race').addEventListener('change', updateRiskPanel);
 
-  // Average over selected year range
-  const avg = (arr) => {
-    const vals = filtered(arr);
-    return Math.round(vals.reduce((a,b) => a+b, 0) / vals.length);
-  };
-
-  const incVals = races.map(r => avg(INCIDENCE[r]));
-  const morVals = races.map(r => avg(MORTALITY[r]));
-
-  if (charts.race) charts.race.destroy();
-  charts.race = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Incidence Rate',
-          data: incVals,
-          backgroundColor: races.map(r => RACE_COLORS[r] + 'cc'),
-          borderColor:      races.map(r => RACE_COLORS[r]),
-          borderWidth: 2,
-          borderRadius: 5
-        },
-        {
-          label: 'Mortality Rate',
-          data: morVals,
-          backgroundColor: '#c0392b88',
-          borderColor:      '#c0392b',
-          borderWidth: 2,
-          borderRadius: 5
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {display: false},
-        tooltip: {
-          backgroundColor: '#1a3a5c',
-          callbacks: {
-            label: (item) => `${item.dataset.label}: ${item.parsed.y} per 100,000`
-          }
-        }
-      },
-      scales: {
-        x: {grid: {display: false}, ticks: {font: {size: 13, weight: '600'}}},
-        y: {
-          grid: {color: 'rgba(0,0,0,.07)'},
-          ticks: {font: {size: 12}},
-          title: {display: true, text: 'Rate per 100,000 men', font: {size: 12}}
-        }
-      }
-    }
-  });
-
-  // Disparity bars
-  const maxInc = Math.max(...incVals);
-  const html = races.map((r, i) => `
-    <div class="d-row">
-      <div class="d-label" style="color:${RACE_COLORS[r]}">${labels[i].split('/')[0]}</div>
-      <div class="d-bar-bg">
-        <div class="d-bar" style="width:${Math.round(incVals[i]/maxInc*100)}%;background:${RACE_COLORS[r]}"></div>
-      </div>
-      <div class="d-val">${incVals[i]}</div>
-    </div>`).join('');
-  document.getElementById('disparityBars').innerHTML = html;
-}
-
-// ─── CHART 3: STAGE ──────────────────────────────────────────────────────────
-function buildStageChart() {
-  const ctx = document.getElementById('stageChart');
-  if (charts.stage) charts.stage.destroy();
-  charts.stage = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: STAGE_YEARS,
-      datasets: [
-        {label: 'Localized',  data: STAGE_DATA.localized, backgroundColor: '#1e844999', borderColor: '#1e8449', borderWidth: 2, borderRadius: 3},
-        {label: 'Regional',   data: STAGE_DATA.regional,  backgroundColor: '#d4ac0d99', borderColor: '#d4ac0d', borderWidth: 2, borderRadius: 3},
-        {label: 'Distant',    data: STAGE_DATA.distant,   backgroundColor: '#c0392b99', borderColor: '#c0392b', borderWidth: 2, borderRadius: 3},
-        {label: 'Unknown',    data: STAGE_DATA.unknown,   backgroundColor: '#71717199', borderColor: '#717171', borderWidth: 2, borderRadius: 3}
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {display: false},
-        tooltip: {
-          backgroundColor: '#1a3a5c',
-          callbacks: {
-            label: (item) => `${item.dataset.label}: ${item.parsed.y}% of new diagnoses`
-          }
-        }
-      },
-      scales: {
-        x: {stacked: true, grid: {display: false}, ticks: {font: {size: 13}}},
-        y: {
-          stacked: true,
-          grid: {color: 'rgba(0,0,0,.07)'},
-          max: 100,
-          ticks: {
-            font: {size: 12},
-            callback: v => v + '%'
-          },
-          title: {display: true, text: '% of New Diagnoses', font: {size: 12}}
-        }
-      }
-    }
-  });
-}
-
-// ─── CHART 4: STATES ─────────────────────────────────────────────────────────
-function buildStateChart() {
-  const ctx = document.getElementById('stateChart');
-  if (charts.state) charts.state.destroy();
-  charts.state = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: STATE_DATA.map(d => d.s),
-      datasets: [
-        {
-          label: 'Incidence',
-          data: STATE_DATA.map(d => d.inc),
-          backgroundColor: '#2471a3bb',
-          borderColor: '#1a5276',
-          borderWidth: 1.5,
-          borderRadius: 3
-        },
-        {
-          label: 'Mortality',
-          data: STATE_DATA.map(d => d.mor),
-          backgroundColor: '#c0392bbb',
-          borderColor: '#922b21',
-          borderWidth: 1.5,
-          borderRadius: 3
-        }
-      ]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {display: false},
-        tooltip: {
-          backgroundColor: '#1a3a5c',
-          callbacks: {
-            label: (item) => `${item.dataset.label}: ${item.parsed.x} per 100,000`
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: {color: 'rgba(0,0,0,.07)'},
-          ticks: {font: {size: 12}},
-          title: {display: true, text: 'Rate per 100,000 men', font: {size: 12}}
-        },
-        y: {grid: {display: false}, ticks: {font: {size: 12}}}
-      }
-    }
-  });
-}
-
-// ─── REFRESH ALL ─────────────────────────────────────────────────────────────
-function refreshAll() {
-  buildTrendsChart();
-  buildRaceChart();
-}
-
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-buildTrendsChart();
-buildRaceChart();
-buildStageChart();
-buildStateChart();
+    // Initial render — wait for both DOM and Plotly
+    document.addEventListener('DOMContentLoaded', () => {
+        updateRiskPanel(); // no Plotly needed
+        window.onPlotlyReady(function () {
+            renderTrendsPreview();
+            renderSurvivalPreview();
+        });
+    });
 </script>
 </body>
 </html>
