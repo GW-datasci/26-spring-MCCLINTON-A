@@ -1152,7 +1152,10 @@
             x: data.map(d => d.group),
             y: data.map(d => d.pct),
             type: 'bar',
-            marker: { color: colors },
+            marker: {
+                color: colors,
+                line: { color: data.map(d => d.target ? '#A0623E' : '#B5CABB'), width: 1.2 }
+            },
             text: data.map(d => d.pct.toFixed(1) + '%'),
             textposition: 'outside',
             textfont: { color: '#2C2C2C', size: 11 }
@@ -1161,14 +1164,38 @@
             ...layoutDefaults,
             title: 'Age Distribution of Cases (Screening Target Ages Highlighted)',
             xaxis: { ...layoutDefaults.xaxis, type: 'category', title: 'Age Group' },
-            yaxis: { ...layoutDefaults.yaxis, title: '% of Cases', range: [0, 42] },
-            annotations: [{
-                x: '45-54', y: 10,
-                text: '← Target screening ages',
-                showarrow: false,
-                font: { size: 10, color: '#C17F5C' },
-                xanchor: 'left'
-            }]
+            yaxis: { ...layoutDefaults.yaxis, title: '% of Cases', range: [0, 46] },
+            /* light terracotta wash behind the two target bars */
+            shapes: [{
+                type: 'rect',
+                xref: 'x', yref: 'paper',
+                x0: 0.5, x1: 2.5,       /* category indices 1 and 2 (45-54, 55-64) */
+                y0: 0,   y1: 1,
+                fillcolor: 'rgba(193,127,92,0.07)',
+                line: { width: 0 }
+            }],
+            annotations: [
+                /* left bracket arm */
+                { x: '45-54', y: 38, ax: 0, ay: 0, xanchor: 'center',
+                  showarrow: true, arrowhead: 0, arrowwidth: 1.8,
+                  arrowcolor: '#C17F5C', axref: 'x', ayref: 'y',
+                  ax: '45-54', ay: 42 },
+                /* right bracket arm */
+                { x: '55-64', y: 38, ax: 0, ay: 0, xanchor: 'center',
+                  showarrow: true, arrowhead: 0, arrowwidth: 1.8,
+                  arrowcolor: '#C17F5C', axref: 'x', ayref: 'y',
+                  ax: '55-64', ay: 42 },
+                /* horizontal crossbar */
+                { x: '45-54', y: 42, ax: 0, ay: 0, xanchor: 'left',
+                  showarrow: true, arrowhead: 0, arrowwidth: 1.8,
+                  arrowcolor: '#C17F5C', axref: 'x', ayref: 'y',
+                  ax: '55-64', ay: 42 },
+                /* label above bracket */
+                { x: '55-64', y: 44.5,
+                  text: '<b>Recommended<br>screening window</b>',
+                  showarrow: false, xanchor: 'right',
+                  font: { size: 10.5, color: '#C17F5C', family: 'Inter, sans-serif' } }
+            ]
         };
         Plotly.newPlot('chart-age-dist', [trace], layout, plotConfig);
     }
