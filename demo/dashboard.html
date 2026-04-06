@@ -905,10 +905,15 @@
             type: 'bar',
             marker: { color: ['#8A9A8B', '#B5C1B6', '#C17F5C', '#C4B9A8'] },
             text: data.map(d => d.pct.toFixed(1) + '%'),
-            textposition: 'inside',
-            textfont: {color: 'white', size: 12}
+            textposition: 'outside',
+            textfont: { color: '#2C2C2C', size: 12 }
         };
-        const layout = { ...layoutDefaults, title: '5-Year Survival by Stage', yaxis: {...layoutDefaults.yaxis, title: 'Survival %', range: [0, 105]} };
+        const layout = {
+            ...layoutDefaults,
+            title: '5-Year Survival by Stage',
+            xaxis: { ...layoutDefaults.xaxis, type: 'category' },
+            yaxis: { ...layoutDefaults.yaxis, title: 'Survival %', range: [0, 115] }
+        };
         Plotly.newPlot('chart-survival-preview', [trace], layout, plotConfig);
     }
 
@@ -1012,18 +1017,25 @@
     }
 
     function renderBubble() {
-        const trace = {
-            x: RAW.race.map(d => d.inc),
-            y: RAW.race.map(d => d.mort),
-            mode: 'markers+text',
+        const colors = ['#C17F5C', '#8A9A8B', '#C4A882', '#9B8FAC', '#B5C1B6'];
+        const traces = RAW.race.map((d, i) => ({
+            x: [d.inc],
+            y: [d.mort],
+            mode: 'markers',
             type: 'scatter',
-            marker: { size: RAW.race.map(d => d.inc / 5), color: ['#C17F5C', '#8A9A8B', '#C4A882', '#9B8FAC', '#B5C1B6'], opacity: 0.75 },
-            text: RAW.race.map(d => d.name.split(' ').slice(-1)[0]),
-            textposition: 'middle center',
-            textfont: {size: 11, color: 'white'}
+            name: d.name,
+            marker: { size: d.inc / 4, color: colors[i], opacity: 0.82, line: { color: '#fff', width: 1.5 } }
+        }));
+        const layout = {
+            ...layoutDefaults,
+            title: 'Incidence vs Mortality by Race (Bubble Size = Incidence Rate)',
+            xaxis: { ...layoutDefaults.xaxis, title: 'Incidence Rate (per 100,000)' },
+            yaxis: { ...layoutDefaults.yaxis, title: 'Mortality Rate (per 100,000)' },
+            legend: { orientation: 'v', x: 1.02, y: 1, xanchor: 'left', font: { size: 11, family: 'Inter, sans-serif' } },
+            showlegend: true,
+            hovermode: 'closest'
         };
-        const layout = { ...layoutDefaults, title: 'Incidence vs Mortality by Race (Bubble Size = Incidence)', xaxis: {...layoutDefaults.xaxis, title: 'Incidence Rate (per 100,000)'}, yaxis: {...layoutDefaults.yaxis, title: 'Mortality Rate (per 100,000)'} };
-        Plotly.newPlot('chart-bubble', [trace], layout, plotConfig);
+        Plotly.newPlot('chart-bubble', traces, layout, plotConfig);
     }
 
     // ===== GEOGRAPHY TAB CHARTS =====
@@ -1129,19 +1141,34 @@
             text: data.map(d => d.pct.toFixed(1) + '%'),
             textposition: 'inside', textfont: {color: 'white', size: 12}
         };
-        const layout = { ...layoutDefaults, margin: {t:50, b:55, l:120, r:20}, title: '5-Year Survival by Stage at Diagnosis', xaxis: {...layoutDefaults.xaxis, title: 'Survival %', range: [0, 105]}, yaxis: {gridcolor:'#EDE9E3'} };
+        const layout = { ...layoutDefaults, margin: {t:50, b:55, l:120, r:20}, title: '5-Year Survival by Stage at Diagnosis', xaxis: {...layoutDefaults.xaxis, title: 'Survival %', range: [0, 110]}, yaxis: { ...layoutDefaults.yaxis, type: 'category' } };
         Plotly.newPlot('chart-survival-bar', [trace], layout, plotConfig);
     }
 
     function renderAgeDistribution() {
         const data   = RAW.age;
-        const colors = data.map(d => d.target ? '#C17F5C' : '#D5CECA');
-        const trace  = { x: data.map(d => d.group), y: data.map(d => d.pct), type: 'bar', marker: {color: colors}, text: data.map(d => d.pct.toFixed(1) + '%'), textposition: 'outside' };
+        const colors = data.map(d => d.target ? '#C17F5C' : '#C8D9C9');
+        const trace  = {
+            x: data.map(d => d.group),
+            y: data.map(d => d.pct),
+            type: 'bar',
+            marker: { color: colors },
+            text: data.map(d => d.pct.toFixed(1) + '%'),
+            textposition: 'outside',
+            textfont: { color: '#2C2C2C', size: 11 }
+        };
         const layout = {
             ...layoutDefaults,
             title: 'Age Distribution of Cases (Screening Target Ages Highlighted)',
-            yaxis: {...layoutDefaults.yaxis, title: '% of Cases', range: [0, 40]},
-            annotations: [{ x: 1, y: 9.5, text: 'Target screening age', showarrow: true, arrowhead: 2, ax: 40, ay: -40, font: {size: 10, color: '#C17F5C'} }]
+            xaxis: { ...layoutDefaults.xaxis, type: 'category', title: 'Age Group' },
+            yaxis: { ...layoutDefaults.yaxis, title: '% of Cases', range: [0, 42] },
+            annotations: [{
+                x: '45-54', y: 10,
+                text: '← Target screening ages',
+                showarrow: false,
+                font: { size: 10, color: '#C17F5C' },
+                xanchor: 'left'
+            }]
         };
         Plotly.newPlot('chart-age-dist', [trace], layout, plotConfig);
     }
