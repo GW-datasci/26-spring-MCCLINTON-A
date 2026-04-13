@@ -1686,9 +1686,9 @@
         // Determine risk tier
         let tier = 'Average';
         let tierClass = 'risk-tier-average';
-        if (relativeRisk < 0.8) { tier = 'Low'; tierClass = 'risk-tier-low'; }
-        else if (relativeRisk > 1.3) { tier = 'Elevated'; tierClass = 'risk-tier-elevated'; }
-        else if (relativeRisk > 1.6) { tier = 'High'; tierClass = 'risk-tier-high'; }
+        if      (relativeRisk >= 1.6) { tier = 'High';     tierClass = 'risk-tier-high'; }
+        else if (relativeRisk >= 1.3) { tier = 'Elevated'; tierClass = 'risk-tier-elevated'; }
+        else if (relativeRisk <  0.8) { tier = 'Low';      tierClass = 'risk-tier-low'; }
 
         const tierDiv = document.getElementById('risk-tier-display');
         tierDiv.innerHTML = `<div style="margin-top:1rem;"><div style="font-size:0.875rem;color:#5E5852;margin-bottom:1rem;">Based on your age and race, your relative risk is approximately <strong>${relativeRisk}×</strong> the average.</div><span class="risk-tier-badge ${tierClass}">${tier} Risk</span></div>`;
@@ -1730,16 +1730,14 @@
         });
     });
 
-    // Stage filter buttons
-    document.querySelectorAll('#chart-trends-full').closest('.chart-container')?.querySelectorAll('.btn').forEach(btn => {
-        if (btn.hasAttribute('data-filter')) {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                currentStageFilter = this.getAttribute('data-filter');
-                renderTrendsFull();
-            });
-        }
+    // Stage filter buttons (querySelectorAll returns NodeList — no .closest(); use direct selector)
+    document.querySelectorAll('[data-filter]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentStageFilter = this.getAttribute('data-filter');
+            window.onPlotlyReady(renderTrendsFull);
+        });
     });
 
     // Disparities metric toggle
