@@ -729,10 +729,14 @@
 
         <div class="chart-container">
             <div class="chart-header">
-                <h3 class="chart-title">State-Level Incidence (Choropleth Map)</h3>
+                <h3 class="chart-title">Prostate Cancer Rates by State (2022)</h3>
+                <div class="button-group">
+                    <button class="btn active geo-metric-btn" data-geo-metric="incidence">Incidence</button>
+                    <button class="btn geo-metric-btn" data-geo-metric="mortality">Mortality</button>
+                </div>
             </div>
             <div id="chart-map" style="height: 600px;"></div>
-            <p class="chart-caption">Source: SEER 22, NCI · 2022 age-adjusted incidence rates per 100,000 by state</p>
+            <p class="chart-caption">Source: SEER 22, NCI · 2022 age-adjusted rates per 100,000 · Hover over a state for full detail</p>
         </div>
 
         <div class="insight-box">
@@ -1680,6 +1684,8 @@
                 renderRaceLollipop();
                 renderRaceTrends();
                 renderBubble();
+            } else if (tabName === 'geography') {
+                window.onPlotlyReady(renderMap);
             } else if (tabName === 'survival') {
                 renderSankey();
                 renderSurvivalBar();
@@ -1711,11 +1717,11 @@
     });
 
     // Geography metric toggle (Incidence / Mortality buttons)
-    document.querySelectorAll('#geography [data-metric]').forEach(btn => {
+    document.querySelectorAll('.geo-metric-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            document.querySelectorAll('#geography [data-metric]').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.geo-metric-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            currentGeoMetric = this.getAttribute('data-metric');
+            currentGeoMetric = this.getAttribute('data-geo-metric');
             window.onPlotlyReady(renderMap);
         });
     });
