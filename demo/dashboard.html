@@ -1281,42 +1281,43 @@
             const values = data.map(d => d[metric === 'incidence' ? 'inc' : 'mort']);
             const colors = ['#9B8FAC', '#8A9A8B', '#C4A882', '#B5C1B6', '#C17F5C'];
 
-            // Line traces
+            // Stem lines — one trace per race using the race name as y
             const lines = data.map((d, idx) => ({
                 x: [0, values[idx]],
-                y: [idx, idx],
+                y: [d.name, d.name],
                 mode: 'lines',
-                line: {color: '#D5CECA', width: 2},
+                line: {color: '#D5CECA', width: 2.5},
                 showlegend: false,
-                hovertemplate: '%{y}<extra></extra>'
+                hoverinfo: 'skip'
             }));
 
-            // Marker trace
+            // Circle markers
             const markers = {
                 x: values,
-                y: data.map((d, i) => i),
+                y: data.map(d => d.name),
                 mode: 'markers',
-                marker: {color: colors, size: 14},
+                type: 'scatter',
+                marker: {color: colors, size: 14, line: {color: '#fff', width: 1.5}},
                 text: data.map(d => d.name),
                 customdata: values,
-                hovertemplate: '%{text}<br>' + metric.charAt(0).toUpperCase() + metric.slice(1) + ': %{customdata:.1f}<extra></extra>',
+                hovertemplate: '<b>%{text}</b><br>' + metric.charAt(0).toUpperCase() + metric.slice(1) + ': %{customdata:.1f} per 100K<extra></extra>',
                 showlegend: false
             };
 
             const layout = {
                 ...layoutDefaults,
-                title: metric === 'incidence' ? 'Incidence by Race (per 100,000)' : 'Mortality by Race (per 100,000)',
+                hovermode: 'closest',
+                title: metric === 'incidence' ? 'Incidence by Race/Ethnicity (per 100,000)' : 'Mortality by Race/Ethnicity (per 100,000)',
                 yaxis: {
                     ...layoutDefaults.yaxis,
                     type: 'category',
                     categoryarray: data.map(d => d.name),
-                    categoryorder: 'array',
-                    showticklabels: true
+                    categoryorder: 'array'
                 },
-                xaxis: {...layoutDefaults.xaxis, title: 'Rate per 100,000', zeroline: true}
+                xaxis: {...layoutDefaults.xaxis, title: 'Rate per 100,000', rangemode: 'tozero'}
             };
 
-            Plotly.newPlot('chart-race-bar', lines.concat([markers]), layout, plotConfig);
+            Plotly.newPlot('chart-race-bar', [...lines, markers], layout, plotConfig);
         });
     }
 
@@ -1357,8 +1358,8 @@
                     line: {color: 'rgba(42,42,40,0.3)', width: 1}
                 },
                 text: RAW.race.map(d => d.name),
-                customdata: RAW.race.map(d => ({inc: d.inc, mort: d.mort})),
-                hovertemplate: '%{text}<br>Incidence: %{customdata.inc:.1f}<br>Mortality: %{customdata.mort:.1f}<extra></extra>'
+                customdata: RAW.race.map(d => [d.inc, d.mort]),
+                hovertemplate: '<b>%{text}</b><br>Incidence: %{customdata[0]:.1f}/100K<br>Mortality: %{customdata[1]:.1f}/100K<extra></extra>'
             };
 
             const layout = {
@@ -1372,29 +1373,70 @@
     }
 
     // ===== GEOGRAPHY TAB CHARTS =====
+    let currentGeoMetric = 'incidence';
+
     function renderMap() {
         window.onPlotlyReady(function() {
+            const key = currentGeoMetric === 'incidence' ? 'inc' : 'mort';
+            const natAvg = RAW.states.reduce((s,d) => s + d[key], 0) / RAW.states.length;
+            const ranked = [...RAW.states].sort((a,b) => b[key] - a[key]);
+            const rankMap = {};
+            ranked.forEach((d,i) => { rankMap[d.abbr] = i+1; });
+
+            const customdata = RAW.states.map(d => {
+                const pct = ((d[key] - natAvg) / natAvg * 100);
+                return [d.state, d.inc.toFixed(1), d.mort.toFixed(1), rankMap[d.abbr], (pct>=0?'+':'')+pct.toFixed(1)+'%'];
+            });
+
+            const colorscale = currentGeoMetric === 'incidence'
+                ? [[0,'#EFF3EF'],[0.25,'#C8D9C9'],[0.5,'#8A9A8B'],[0.75,'#5A7A5C'],[1,'#2A4A2C']]
+                : [[0,'#FAF3EE'],[0.25,'#E8C9B0'],[0.5,'#C17F5C'],[0.75,'#9A5A35'],[1,'#6B3318']];
+
             const trace = {
                 type: 'choropleth',
+                locationmode: 'USA-states',
                 locations: RAW.states.map(d => d.abbr),
-                z: RAW.states.map(d => d.inc),
-                colorscale: [
-                    [0, '#EFF3EF'],
-                    [0.3, '#8A9A8B'],
-                    [0.7, '#C17F5C'],
-                    [1, '#9B8FAC']
-                ],
-                colorbar: {title: 'Rate per<br>100,000'},
-                text: RAW.states.map(d => d.state),
-                hovertemplate: '%{text}<br>Incidence: %{z:.1f}<extra></extra>',
-                marker: {line: {color: 'rgba(42,42,40,0.2)', width: 0.5}}
+                z: RAW.states.map(d => d[key]),
+                customdata: customdata,
+                hovertemplate:
+                    '<b>%{customdata[0]}</b><br>' +
+                    'Incidence: %{customdata[1]}/100K<br>' +
+                    'Mortality: %{customdata[2]}/100K<br>' +
+                    'National rank: #%{customdata[3]} of 51<br>' +
+                    'vs. avg: %{customdata[4]}' +
+                    '<extra></extra>',
+                colorscale: colorscale,
+                zmin: Math.min(...RAW.states.map(d => d[key])),
+                zmax: Math.max(...RAW.states.map(d => d[key])),
+                colorbar: {
+                    title: {text: 'Rate<br>per 100K', font: {size:11}},
+                    thickness: 14, len: 0.65
+                },
+                marker: {line: {color: '#FFFFFF', width: 1.2}}
             };
 
             const layout = {
-                ...layoutDefaults,
-                title: 'Prostate Cancer Incidence by State (2022)',
-                geo: {scope: 'usa', showland: true, landcolor: '#F0ECE6'},
-                margin: {t: 50, b: 20, l: 20, r: 120}
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                font: {family: 'Inter, sans-serif', color: '#2C2C2C'},
+                title: {
+                    text: currentGeoMetric === 'incidence'
+                        ? 'Prostate Cancer Incidence by State (2022)'
+                        : 'Prostate Cancer Mortality by State (2022)',
+                    font: {family: 'Playfair Display, Georgia, serif', size: 16, color: '#2C2C2C'},
+                    x: 0.02, xanchor: 'left'
+                },
+                geo: {
+                    scope: 'usa', projection: {type: 'albers usa'},
+                    bgcolor: 'rgba(0,0,0,0)', landcolor: '#F0ECE6',
+                    lakecolor: '#F7F5F2', subunitcolor: '#FFFFFF',
+                    showlakes: true, showland: true, showsubunits: true
+                },
+                hoverlabel: {
+                    bgcolor: '#2A2A28', bordercolor: '#2A2A28',
+                    font: {family: 'Inter, sans-serif', size: 12, color: '#F7F5F2'}
+                },
+                hovermode: 'closest',
+                margin: {t: 55, b: 10, l: 10, r: 80}
             };
             Plotly.newPlot('chart-map', [trace], layout, plotConfig);
             hideLoader();
@@ -1555,7 +1597,11 @@
                 xaxis: { ...layoutDefaults.xaxis, type: 'category', title: 'Age Group' },
                 yaxis: { ...layoutDefaults.yaxis, title: '% of Cases', range: [0, 40] },
                 annotations: [{
-                    x: 1, y: 10, text: 'USPSTF Target<br/>Age Range', showarrow: true, font: {size: 10, color: '#8A9A8B'}, arrowhead: 2
+                    x: '55-64', y: 33,
+                    text: '← Recommended screening window',
+                    showarrow: false,
+                    xanchor: 'right',
+                    font: {size: 10, color: '#C17F5C', family: 'Inter, sans-serif'}
                 }]
             };
             Plotly.newPlot('chart-age-dist', [trace], layout, plotConfig);
@@ -1625,6 +1671,8 @@
             // Render tab-specific content
             if (tabName === 'overview') {
                 renderSparklines();
+                renderTrendsPreview();
+                renderSurvivalPreview();
             } else if (tabName === 'trends') {
                 renderTrendsFull();
                 renderStagesArea();
@@ -1659,6 +1707,16 @@
             this.classList.add('active');
             currentRaceMetric = this.getAttribute('data-metric');
             renderRaceLollipop();
+        });
+    });
+
+    // Geography metric toggle (Incidence / Mortality buttons)
+    document.querySelectorAll('#geography [data-metric]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('#geography [data-metric]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentGeoMetric = this.getAttribute('data-metric');
+            window.onPlotlyReady(renderMap);
         });
     });
 
