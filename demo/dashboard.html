@@ -23,11 +23,14 @@
         function tryLoad(i) {
             if (i >= CDNS.length) {
                 console.error('All Plotly CDNs failed — charts unavailable');
+                // Still clear the spinner so the page isn't stuck
+                var l = document.getElementById('plotly-loader');
+                if (l) { l.style.opacity='0'; l.style.pointerEvents='none'; }
                 return;
             }
             var s   = document.createElement('script');
             s.src   = CDNS[i];
-            s.async = false;          /* keep execution order predictable  */
+            s.async = false;
             s.onload  = function () { _queue.forEach(function (f) { f(); }); _queue = []; };
             s.onerror = function () { tryLoad(i + 1); };
             document.head.appendChild(s);
@@ -1003,15 +1006,22 @@
         return {slope, intercept, se};
     }
 
-    // Hide loader after first render
+    // Hide loader — called after first chart renders, or after 4s no matter what
     let firstRenderDone = false;
     function hideLoader() {
         if (!firstRenderDone) {
             firstRenderDone = true;
             const loader = document.getElementById('plotly-loader');
-            if (loader) { loader.classList.add('hidden'); }
+            if (loader) {
+                loader.style.transition = 'opacity 0.4s ease';
+                loader.style.opacity = '0';
+                loader.style.pointerEvents = 'none';
+                setTimeout(function() { if (loader.parentNode) loader.parentNode.removeChild(loader); }, 450);
+            }
         }
     }
+    // Guaranteed fallback — always clear spinner after 4 seconds
+    setTimeout(hideLoader, 4000);
 
     // ===== SPARKLINES =====
     function renderSparklines() {
