@@ -1466,63 +1466,99 @@
     }
 
     function renderCompare() {
+        const stateAVal = document.getElementById('compare-state-a').value;
+        const stateBVal = document.getElementById('compare-state-b').value;
+        if (!stateAVal || !stateBVal) return;
+
+        const sA = RAW.states.find(s => s.state === stateAVal);
+        const sB = RAW.states.find(s => s.state === stateBVal);
+        if (!sA || !sB) return;
+
+        const natAvgInc  = RAW.states.reduce((s,d) => s+d.inc,  0) / RAW.states.length;
+        const natAvgMort = RAW.states.reduce((s,d) => s+d.mort, 0) / RAW.states.length;
+
+        const rankIncA  = RAW.states.filter(s => s.inc  > sA.inc).length  + 1;
+        const rankIncB  = RAW.states.filter(s => s.inc  > sB.inc).length  + 1;
+        const rankMortA = RAW.states.filter(s => s.mort > sA.mort).length + 1;
+        const rankMortB = RAW.states.filter(s => s.mort > sB.mort).length + 1;
+
         window.onPlotlyReady(function() {
-            const stateAVal = document.getElementById('compare-state-a').value;
-            const stateBVal = document.getElementById('compare-state-b').value;
-
-            if (!stateAVal || !stateBVal) return;
-
-            const stateA = RAW.states.find(s => s.state === stateAVal);
-            const stateB = RAW.states.find(s => s.state === stateBVal);
+            // Use % vs national average so incidence + mortality are on same scale
+            const categories = ['Incidence vs Natl Avg', 'Mortality vs Natl Avg'];
+            const pctA = [
+                ((sA.inc  - natAvgInc)  / natAvgInc  * 100),
+                ((sA.mort - natAvgMort) / natAvgMort * 100)
+            ];
+            const pctB = [
+                ((sB.inc  - natAvgInc)  / natAvgInc  * 100),
+                ((sB.mort - natAvgMort) / natAvgMort * 100)
+            ];
 
             const traceA = {
-                x: ['Incidence', 'Mortality'],
-                y: [stateA.inc, stateA.mort],
-                name: stateA.state,
+                x: categories, y: pctA, name: sA.state,
                 type: 'bar',
-                marker: {color: '#8A9A8B'}
+                marker: { color: '#8A9A8B' },
+                text: pctA.map(v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%'),
+                textposition: 'outside',
+                textfont: { size: 11, color: '#2C2C2C' }
             };
-
             const traceB = {
-                x: ['Incidence', 'Mortality'],
-                y: [stateB.inc, stateB.mort],
-                name: stateB.state,
+                x: categories, y: pctB, name: sB.state,
                 type: 'bar',
-                marker: {color: '#C17F5C'}
+                marker: { color: '#C17F5C' },
+                text: pctB.map(v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%'),
+                textposition: 'outside',
+                textfont: { size: 11, color: '#2C2C2C' }
+            };
+            // Zero line = national average
+            const natLine = {
+                x: categories, y: [0, 0],
+                type: 'scatter', mode: 'lines',
+                line: { color: '#ABA59F', width: 1.5, dash: 'dot' },
+                name: 'National Avg', showlegend: true
             };
 
             const layout = {
                 ...layoutDefaults,
                 barmode: 'group',
-                title: stateA.state + ' vs ' + stateB.state,
-                yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'}
+                hovermode: 'x unified',
+                title: sA.state + ' vs ' + sB.state + ' (% above/below national average)',
+                xaxis: { ...layoutDefaults.xaxis, type: 'category' },
+                yaxis: { ...layoutDefaults.yaxis, title: '% vs National Average', zeroline: true, zerolinecolor: '#ABA59F' },
+                shapes: [{ type:'line', x0:-0.5, x1:1.5, y0:0, y1:0, line:{color:'#ABA59F', width:1, dash:'dot'} }]
             };
 
-            Plotly.newPlot('chart-compare', [traceA, traceB], layout, plotConfig);
-
-            // Render comparison stats
-            const statsDiv = document.getElementById('compare-stats');
-            const natAvgInc = RAW.states.reduce((s,d)=>s+d.inc,0)/RAW.states.length;
-            const natAvgMort = RAW.states.reduce((s,d)=>s+d.mort,0)/RAW.states.length;
-
-            const rankIncA = RAW.states.filter(s=>s.inc > stateA.inc).length + 1;
-            const rankIncB = RAW.states.filter(s=>s.inc > stateB.inc).length + 1;
-
-            statsDiv.innerHTML = `
-                <div style="background:#FFFFFF;border:1px solid #EAE6E0;border-radius:3px;padding:1.5rem;">
-                    <div style="font-size:0.68rem;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:#ABA59F;margin-bottom:0.5rem;">Rank (Incidence)</div>
-                    <div style="font-family:'Playfair Display',Georgia,serif;font-size:1.5rem;font-weight:500;color:#2C2C2C;">#${rankIncA} of 51</div>
-                    <div style="font-size:0.85rem;color:#ABA59F;margin-top:0.5rem;">${stateA.state}</div>
-                    <div style="font-size:0.85rem;color:#5E5852;margin-top:0.5rem;">${(stateA.inc > natAvgInc ? '+' : '')} ${((stateA.inc-natAvgInc)/natAvgInc*100).toFixed(1)}% vs national</div>
-                </div>
-                <div style="background:#FFFFFF;border:1px solid #EAE6E0;border-radius:3px;padding:1.5rem;">
-                    <div style="font-size:0.68rem;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:#ABA59F;margin-bottom:0.5rem;">Rank (Incidence)</div>
-                    <div style="font-family:'Playfair Display',Georgia,serif;font-size:1.5rem;font-weight:500;color:#2C2C2C;">#${rankIncB} of 51</div>
-                    <div style="font-size:0.85rem;color:#ABA59F;margin-top:0.5rem;">${stateB.state}</div>
-                    <div style="font-size:0.85rem;color:#5E5852;margin-top:0.5rem;">${(stateB.inc > natAvgInc ? '+' : '')} ${((stateB.inc-natAvgInc)/natAvgInc*100).toFixed(1)}% vs national</div>
-                </div>
-            `;
+            Plotly.newPlot('chart-compare', [traceA, traceB, natLine], layout, plotConfig);
         });
+
+        // Stat cards (no Plotly needed)
+        const statsDiv = document.getElementById('compare-stats');
+        const card = (state, inc, mort, rankI, rankM, natI, natM, color) => `
+            <div style="background:#FFFFFF;border:1px solid #EAE6E0;border-top:3px solid ${color};border-radius:3px;padding:1.5rem;">
+                <div style="font-family:'Playfair Display',Georgia,serif;font-size:1.2rem;font-weight:500;color:#2C2C2C;margin-bottom:1rem;">${state}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                    <div>
+                        <div style="font-size:0.65rem;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:#ABA59F;">Incidence</div>
+                        <div style="font-size:1.3rem;font-family:'Playfair Display',serif;color:#2C2C2C;">${inc.toFixed(1)}</div>
+                        <div style="font-size:0.75rem;color:#8A9A8B;">Rank #${rankI} of 51</div>
+                        <div style="font-size:0.75rem;color:#5E5852;">${((inc-natI)/natI*100 >= 0 ? '+' : '')}${((inc-natI)/natI*100).toFixed(1)}% vs avg</div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.65rem;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:#ABA59F;">Mortality</div>
+                        <div style="font-size:1.3rem;font-family:'Playfair Display',serif;color:#2C2C2C;">${mort.toFixed(1)}</div>
+                        <div style="font-size:0.75rem;color:#8A9A8B;">Rank #${rankM} of 51</div>
+                        <div style="font-size:0.75rem;color:#5E5852;">${((mort-natM)/natM*100 >= 0 ? '+' : '')}${((mort-natM)/natM*100).toFixed(1)}% vs avg</div>
+                    </div>
+                </div>
+            </div>`;
+
+        statsDiv.style.display = 'grid';
+        statsDiv.style.gridTemplateColumns = '1fr 1fr';
+        statsDiv.style.gap = '1.5rem';
+        statsDiv.style.marginTop = '1.5rem';
+        statsDiv.innerHTML =
+            card(sA.state, sA.inc, sA.mort, rankIncA, rankMortA, natAvgInc, natAvgMort, '#8A9A8B') +
+            card(sB.state, sB.inc, sB.mort, rankIncB, rankMortB, natAvgInc, natAvgMort, '#C17F5C');
     }
 
     // ===== SANKEY DIAGRAM =====
