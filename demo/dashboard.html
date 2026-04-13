@@ -92,6 +92,22 @@
             color: #A8A29C;
             letter-spacing: 0.02em;
         }
+        .header-meta {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1.25rem;
+        }
+        .data-badge {
+            font-size: 0.65rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: #8A9A8B;
+            border: 1px solid rgba(138,154,139,0.35);
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+        }
 
         /* ─── NAV TABS ───────────────────────────────────────────────── */
         .nav-tabs {
@@ -217,6 +233,12 @@
             color: #2C2C2C;
             letter-spacing: -0.01em;
         }
+        .chart-caption {
+            font-size: 0.72rem;
+            color: #ABA59F;
+            margin-top: 0.75rem;
+            letter-spacing: 0.02em;
+        }
 
         /* ─── BUTTONS ────────────────────────────────────────────────── */
         .button-group { display: flex; gap: 0.4rem; }
@@ -337,6 +359,20 @@
             color: #2C2C2C;
             letter-spacing: -0.02em;
         }
+        .risk-tier-badge {
+            display: inline-block;
+            padding: 0.35rem 1rem;
+            border-radius: 100px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-top: 0.75rem;
+        }
+        .risk-tier-low { background: rgba(138,154,139,0.15); color: #8A9A8B; }
+        .risk-tier-average { background: rgba(196,168,130,0.15); color: #C4A882; }
+        .risk-tier-elevated { background: rgba(193,127,92,0.15); color: #C17F5C; }
+        .risk-tier-high { background: rgba(155,143,172,0.15); color: #9B8FAC; }
 
         /* ─── GUIDANCE BOXES ─────────────────────────────────────────── */
         .screening-guidance {
@@ -448,9 +484,56 @@
             font-size: 0.75rem;
         }
         .section-divider { height: 1px; background: #EAE6E0; margin: 2.5rem 0; }
+
+        /* ─── LOADING SPINNER ────────────────────────────────────────── */
+        #plotly-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #F7F5F2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease;
+        }
+        #plotly-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .spinner-ring {
+            width: 36px;
+            height: 36px;
+            border: 3px solid #EAE6E0;
+            border-top-color: #8A9A8B;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── RESPONSIVE ─────────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2rem; }
+            .nav-tabs-container { overflow-x: auto; white-space: nowrap; padding-bottom: 4px; }
+            .nav-tab { padding: 1rem 1rem; font-size: 0.65rem; }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .two-chart-row { grid-template-columns: 1fr; }
+            .risk-cards { grid-template-columns: repeat(2, 1fr); }
+            .screening-guidance { grid-template-columns: 1fr; }
+            .sources-grid { grid-template-columns: 1fr; }
+            .container { padding: 1.5rem 1rem; }
+        }
+        @media (max-width: 480px) {
+            .kpi-grid { grid-template-columns: 1fr; }
+            .header { padding: 2.5rem 1.25rem 2rem; }
+        }
     </style>
 </head>
 <body>
+
+<!-- Loading Spinner -->
+<div id="plotly-loader">
+    <div class="spinner-ring"></div>
+</div>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <!--  HEADER                                                            -->
@@ -460,6 +543,11 @@
         <div class="header-eyebrow">Data Science Capstone &nbsp;·&nbsp; March 2026</div>
         <h1>Prostate Cancer<br>Statistics Dashboard</h1>
         <p>Epidemiological Analysis &amp; Risk Assessment &mdash; United States, 2000–2022</p>
+        <div class="header-meta">
+            <span class="data-badge">Data vintage: SEER 2022</span>
+            <span class="data-badge">Last updated: April 2026</span>
+            <span class="data-badge">n = 51 states · 23 years</span>
+        </div>
     </div>
 </div>
 
@@ -495,201 +583,198 @@
                 </div>
                 <div class="kpi-label">2022 Overall Incidence</div>
                 <div class="kpi-value">165.8/100K</div>
+                <div id="spark-incidence" style="height:55px;margin-top:0.75rem;"></div>
             </div>
 
             <div class="kpi-card red">
                 <div class="kpi-icon">
-                    <!-- activity / pulse -->
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <!-- skull -->
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="6"/><path d="M8 14s-1.5 2-1.5 4c0 1.656 2.686 3 5.5 3s5.5-1.344 5.5-3c0-2-1.5-4-1.5-4"/><line x1="9" y1="9" x2="9" y2="9.01"/><line x1="15" y1="9" x2="15" y2="9.01"/></svg>
                 </div>
                 <div class="kpi-label">2022 Mortality Rate</div>
                 <div class="kpi-value">19.6/100K</div>
-            </div>
-
-            <div class="kpi-card green">
-                <div class="kpi-icon">
-                    <!-- check circle -->
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
-                </div>
-                <div class="kpi-label">Localized Survival</div>
-                <div class="kpi-value">99.9%</div>
+                <div id="spark-mortality" style="height:55px;margin-top:0.75rem;"></div>
             </div>
 
             <div class="kpi-card amber">
                 <div class="kpi-icon">
-                    <!-- clock -->
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <!-- trending up -->
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                 </div>
-                <div class="kpi-label">Most Affected Age</div>
-                <div class="kpi-value">65-74 yrs</div>
-            </div>
-
-            <div class="kpi-card red">
-                <div class="kpi-icon">
-                    <!-- alert triangle -->
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                </div>
-                <div class="kpi-label">Black vs White Inc.</div>
-                <div class="kpi-value">1.6x Higher</div>
+                <div class="kpi-label">Distant Stage Trend</div>
+                <div class="kpi-value">+49%</div>
+                <div class="kpi-label" style="margin-top: 0.5rem; opacity: 0.6;">Since 2000</div>
             </div>
 
             <div class="kpi-card purple">
                 <div class="kpi-icon">
-                    <!-- user / person -->
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <!-- check circle -->
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 </div>
-                <div class="kpi-label">Lifetime Risk (1 in)</div>
-                <div class="kpi-value">8 Men</div>
-            </div>
-
-            <div class="kpi-card">
-                <div class="kpi-icon">
-                    <!-- trending up -->
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                </div>
-                <div class="kpi-label">Cases Diagnosed (2022)</div>
-                <div class="kpi-value">248K</div>
-            </div>
-
-            <div class="kpi-card green">
-                <div class="kpi-icon">
-                    <!-- shield -->
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                </div>
-                <div class="kpi-label">Early Detection Rate</div>
-                <div class="kpi-value">84%</div>
+                <div class="kpi-label">5-Year Survival (Localized)</div>
+                <div class="kpi-value">~100%</div>
             </div>
 
         </div>
 
+        <div class="insight-box green">
+            <div class="insight-title">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+                Overall Trend
+            </div>
+            <div class="insight-text">Prostate cancer incidence fell sharply 2000–2014, coinciding with shifts in PSA screening practices after 2012 USPSTF recommendations. Since 2015, rates have begun to stabilize and slightly increase, while mortality has remained relatively flat.</div>
+        </div>
+
+        <h2 class="section-heading" style="margin-top: 3rem;">Trends Preview</h2>
         <div class="two-chart-row">
             <div class="chart-container">
                 <div class="chart-header">
-                    <h3 class="chart-title">Incidence Trends (2000-2022)</h3>
+                    <h3 class="chart-title">Incidence by Stage (2000–2022)</h3>
                 </div>
                 <div id="chart-trends-preview" style="height: 300px;"></div>
+                <p class="chart-caption">Source: SEER 22, NCI · Age-adjusted rates per 100,000 · 2000–2022</p>
             </div>
             <div class="chart-container">
                 <div class="chart-header">
-                    <h3 class="chart-title">Survival by Stage</h3>
+                    <h3 class="chart-title">5-Year Survival by Stage at Diagnosis</h3>
                 </div>
                 <div id="chart-survival-preview" style="height: 300px;"></div>
+                <p class="chart-caption">Source: SEER 22 survival data · Age-adjusted cohorts</p>
             </div>
-        </div>
-
-        <div class="insight-box amber">
-            <div class="insight-title">
-                <!-- bar chart sm -->
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
-                Key Finding
-            </div>
-            <div class="insight-text">Incidence rates peaked in 2022, rebounding from a 2013 low of 84.2/100K. This reflects increased screening and PSA testing adoption. Meanwhile, mortality has remained relatively stable around 19-20/100K, suggesting improved treatment outcomes.</div>
         </div>
     </div>
 
     <!-- ── TRENDS TAB ─────────────────────────────────────────────── -->
     <div id="trends" class="tab-content">
+        <h2 class="section-heading">Detailed Trends &amp; Projections</h2>
+
         <div class="chart-container">
             <div class="chart-header">
-                <h3 class="chart-title">Incidence &amp; Mortality Trends by Stage</h3>
-                <div class="select-wrapper" style="width: 200px;">
-                    <select id="stage-filter">
-                        <option value="all">All Stages</option>
-                        <option value="localized">Localized Only</option>
-                        <option value="distant">Distant Only</option>
-                        <option value="regional">Regional Only</option>
-                    </select>
+                <h3 class="chart-title">Incidence & Mortality with Projections to 2030</h3>
+                <div class="button-group">
+                    <button class="btn active" data-filter="all">All Stages</button>
+                    <button class="btn" data-filter="localized">Localized</button>
+                    <button class="btn" data-filter="distant">Distant</button>
+                    <button class="btn" data-filter="regional">Regional</button>
                 </div>
             </div>
             <div id="chart-trends-full" style="height: 500px;"></div>
+            <p class="chart-caption">Source: SEER 22, NCI · Projections use linear regression on last 8 years with 95% CI bands · Age-adjusted rates per 100,000</p>
         </div>
 
         <div class="chart-container">
             <div class="chart-header">
-                <h3 class="chart-title">Incidence by Stage Over Time (Area)</h3>
+                <h3 class="chart-title">Incidence by Stage Over Time</h3>
             </div>
             <div id="chart-stages-area" style="height: 400px;"></div>
+            <p class="chart-caption">Source: SEER 22, NCI · Stacked area showing relative proportions of stage at diagnosis</p>
         </div>
 
-        <div class="insight-box green">
+        <div class="insight-box amber">
             <div class="insight-title">
-                <!-- search -->
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                Clinical Implications
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3.05h16.94a2 2 0 0 0 1.71-3.05L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Distant Stage Rise
             </div>
-            <div class="insight-text">The dramatic decline in localized diagnoses (2000-2013) reflects the 2012 USPSTF recommendation against PSA screening for average-risk men. The subsequent rise (2015+) indicates renewed clinical interest and informed screening decisions among eligible populations.</div>
+            <div class="insight-text">The most striking trend is the sustained increase in distant-stage diagnoses (metastatic at diagnosis) since 2008—up nearly 50% over the period. This may reflect shifting screening practices, but also warrants attention to late-stage detection rates in vulnerable populations.</div>
         </div>
     </div>
 
     <!-- ── DISPARITIES TAB ────────────────────────────────────────── -->
     <div id="disparities" class="tab-content">
+        <h2 class="section-heading">Race &amp; Ethnicity Disparities</h2>
+
         <div class="chart-container">
             <div class="chart-header">
-                <h3 class="chart-title">Incidence and Mortality by Race/Ethnicity (2022)</h3>
+                <h3 class="chart-title">Incidence and Mortality by Race (2022)</h3>
                 <div class="button-group">
                     <button class="btn active" data-metric="incidence">Incidence</button>
                     <button class="btn" data-metric="mortality">Mortality</button>
                 </div>
             </div>
             <div id="chart-race-bar" style="height: 400px;"></div>
+            <p class="chart-caption">Source: SEER 22, NCI · Age-adjusted rates per 100,000 · Non-Hispanic Black men have significantly higher incidence and mortality</p>
         </div>
 
         <div class="chart-container">
             <div class="chart-header">
-                <h3 class="chart-title">Race-Specific Trends (2000-2022)</h3>
+                <h3 class="chart-title">Incidence Trends by Race (2000–2022)</h3>
             </div>
             <div id="chart-race-trends" style="height: 400px;"></div>
+            <p class="chart-caption">Source: SEER 22, NCI · Age-adjusted rates per 100,000 · Depicts diverging trajectories across racial/ethnic groups</p>
         </div>
 
         <div class="chart-container">
             <div class="chart-header">
-                <h3 class="chart-title">Burden of Illness: Incidence vs Mortality by Race</h3>
+                <h3 class="chart-title">Incidence vs. Mortality by Race (Bubble Chart)</h3>
             </div>
             <div id="chart-bubble" style="height: 400px;"></div>
+            <p class="chart-caption">Source: SEER 22, NCI · Bubble size = population incidence; Y-axis = mortality rate</p>
         </div>
 
         <div class="insight-box red">
             <div class="insight-title">
-                <!-- alert triangle -->
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                Health Disparity
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                Significant Health Disparities
             </div>
-            <div class="insight-text">Non-Hispanic Black men experience a 60% higher incidence rate (175.2/100K) and 109% higher mortality rate (37.9/100K) compared to Non-Hispanic White men. This disparity reflects differences in screening access, treatment patterns, and potential biological factors.</div>
+            <div class="insight-text">Non-Hispanic Black men have both the highest incidence (175.2/100K) and mortality (37.9/100K) rates. Disparities reflect complex interactions of biology, screening access, healthcare quality, socioeconomic factors, and systemic inequities. Targeted screening and early intervention in high-burden communities is critical.</div>
         </div>
     </div>
 
     <!-- ── GEOGRAPHY TAB ──────────────────────────────────────────── -->
     <div id="geography" class="tab-content">
+        <h2 class="section-heading">Geographic Variation</h2>
+
         <div class="chart-container">
             <div class="chart-header">
-                <h3 class="chart-title">Geographic Variation in Prostate Cancer Rates by US State</h3>
-                <div class="button-group">
-                    <button class="btn active" data-metric="incidence">Incidence</button>
-                    <button class="btn" data-metric="mortality">Mortality</button>
-                </div>
+                <h3 class="chart-title">State-Level Incidence (Choropleth Map)</h3>
             </div>
             <div id="chart-map" style="height: 600px;"></div>
+            <p class="chart-caption">Source: SEER 22, NCI · 2022 age-adjusted incidence rates per 100,000 by state</p>
         </div>
 
-        <div class="insight-box amber">
+        <div class="insight-box">
             <div class="insight-title">
-                <!-- map -->
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 Regional Patterns
             </div>
-            <div class="insight-text">Southeastern and Mid-Atlantic states show higher incidence and mortality rates. Potential factors include older populations, differential screening practices, healthcare access, and socioeconomic factors. Western states generally show lower rates.</div>
+            <div class="insight-text">Incidence rates vary substantially across states (72–149 per 100,000), with higher rates in the Southeast and Mid-Atlantic regions. These differences may reflect variation in screening practices, demographic composition, healthcare access, and surveillance completeness.</div>
+        </div>
+
+        <div class="chart-container" id="compare-states-panel">
+            <div class="chart-header">
+                <h3 class="chart-title">Compare Two States</h3>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
+                <div class="select-wrapper">
+                    <select id="compare-state-a"><option value="">Select State A…</option></select>
+                </div>
+                <div class="select-wrapper">
+                    <select id="compare-state-b"><option value="">Select State B…</option></select>
+                </div>
+            </div>
+            <div id="chart-compare" style="height:300px;"></div>
+            <div id="compare-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1.5rem;"></div>
         </div>
     </div>
 
-    <!-- ── SURVIVAL & AGE TAB ─────────────────────────────────────── -->
+    <!-- ── SURVIVAL TAB ────────────────────────────────────────────── -->
     <div id="survival" class="tab-content">
         <h2 class="section-heading">Survival and Age Distribution</h2>
+
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title">From Diagnosis to 5-Year Outcome (per 1,000 men)</h3>
+            </div>
+            <div id="chart-sankey" style="height: 380px;"></div>
+            <p class="chart-caption">Source: SEER 22, NCI · Sankey diagram showing diagnostic stage distribution and survival outcomes</p>
+        </div>
 
         <div class="chart-container">
             <div class="chart-header">
                 <h3 class="chart-title">5-Year Relative Survival Rate by Stage at Diagnosis</h3>
             </div>
             <div id="chart-survival-bar" style="height: 300px;"></div>
+            <p class="chart-caption">Source: SEER 22 survival data · Age-adjusted cohorts with minimum 5-year follow-up</p>
         </div>
 
         <div class="chart-container">
@@ -697,6 +782,7 @@
                 <h3 class="chart-title">Age Distribution of Prostate Cancer Cases</h3>
             </div>
             <div id="chart-age-dist" style="height: 350px;"></div>
+            <p class="chart-caption">Source: SEER 22, NCI · Percentage of new cases by age group · Incidence peaks at 65–74 years</p>
         </div>
 
         <div class="insight-box green">
@@ -768,6 +854,8 @@
             </div>
         </div>
 
+        <div id="risk-tier-display" style="text-align: center; margin-bottom: 2.75rem;"></div>
+
         <div class="screening-guidance">
             <div class="guidance-box">
                 <div class="guidance-title">
@@ -804,66 +892,79 @@
 
     <!-- ── SOURCES TAB ────────────────────────────────────────────── -->
     <div id="sources" class="tab-content">
-        <h2 class="section-heading">Data Sources &amp; References</h2>
+        <h2 class="section-heading">Data Sources &amp; Methods</h2>
+
         <div class="sources-grid">
             <div class="source-card">
-                <div class="source-title">National Cancer Institute (NCI)</div>
-                <div class="source-text">Surveillance, Epidemiology, and End Results (SEER) database providing comprehensive cancer statistics and incidence/mortality trends.</div>
-                <a href="https://seer.cancer.gov/" class="source-link">seer.cancer.gov</a>
+                <div class="source-title">SEER Cancer Statistics</div>
+                <div class="source-text">
+                    Surveillance, Epidemiology, and End Results (SEER) Program of the National Cancer Institute (NCI). SEER database covers ~35% of the US population and provides age-adjusted incidence and mortality rates with high quality control.
+                </div>
+                <a href="https://seer.cancer.gov/" class="source-link">https://seer.cancer.gov/</a>
             </div>
-            <div class="source-card">
-                <div class="source-title">CDC Cancer Statistics Center</div>
-                <div class="source-text">Centers for Disease Control and Prevention data on cancer incidence, mortality, and disparities across the United States.</div>
-                <a href="https://www.cdc.gov/cancer/" class="source-link">cdc.gov/cancer</a>
-            </div>
-            <div class="source-card">
-                <div class="source-title">USPSTF Screening Guidelines</div>
-                <div class="source-text">U.S. Preventive Services Task Force recommendations on prostate cancer screening for asymptomatic men.</div>
-                <a href="https://www.uspreventiveservicestaskforce.org/" class="source-link">uspreventiveservicestaskforce.org</a>
-            </div>
-            <div class="source-card">
-                <div class="source-title">American Cancer Society</div>
-                <div class="source-text">Comprehensive prostate cancer statistics, screening recommendations, and patient education resources.</div>
-                <a href="https://www.cancer.org/" class="source-link">cancer.org</a>
-            </div>
-            <div class="source-card">
-                <div class="source-title">National Center for Health Statistics (NCHS)</div>
-                <div class="source-text">NCHS mortality data and health disparities by race, ethnicity, and geography from CDC.</div>
-                <a href="https://www.cdc.gov/nchs/" class="source-link">cdc.gov/nchs</a>
-            </div>
-            <div class="source-card">
-                <div class="source-title">Plotly.js Charting Library</div>
-                <div class="source-text">Interactive visualization library used to create all dashboard charts and graphs.</div>
-                <a href="https://plotly.com/javascript/" class="source-link">plotly.com/javascript</a>
-            </div>
-        </div>
 
-        <div class="section-divider"></div>
-
-        <div class="insight-box">
-            <div class="insight-title">
-                <!-- file text -->
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                Data Note
+            <div class="source-card">
+                <div class="source-title">USPSTF Prostate Cancer Screening</div>
+                <div class="source-text">
+                    US Preventive Services Task Force (USPSTF) guidelines on PSA screening recommendations. 2012 recommendation against routine screening, 2018 update recommending individualized decision-making for ages 55-69.
+                </div>
+                <a href="https://www.uspreventiveservicestaskforce.org/" class="source-link">https://www.uspreventiveservicestaskforce.org/</a>
             </div>
-            <div class="insight-text">This dashboard presents aggregated epidemiological data from 2000-2022. All incidence rates are age-adjusted per 100,000 population. Rates are based on the most recent available data from SEER and CDC sources. This is an educational tool for a data science capstone project and should not replace professional medical advice.</div>
+
+            <div class="source-card">
+                <div class="source-title">National Cancer Institute</div>
+                <div class="source-text">
+                    Comprehensive cancer information and statistics from the National Cancer Institute, part of the National Institutes of Health (NIH).
+                </div>
+                <a href="https://www.cancer.gov/" class="source-link">https://www.cancer.gov/</a>
+            </div>
+
+            <div class="source-card">
+                <div class="source-title">Methodology Notes</div>
+                <div class="source-text">
+                    All rates are age-adjusted to the 2000 US standard population. Projections 2023–2030 use simple linear regression on the last 8 years of data with 95% confidence bands. Disparities analysis focuses on race/ethnicity and geographic variation.
+                </div>
+            </div>
+
+            <div class="source-card">
+                <div class="source-title">Dashboard Technical Details</div>
+                <div class="source-text">
+                    Interactive dashboard built with Plotly.js. All data is embedded as JavaScript objects; no server backend required. Charts are fully responsive and support interactive exploration (zoom, pan, hover).
+                </div>
+            </div>
+
+            <div class="source-card">
+                <div class="source-title">How to Use This Dashboard</div>
+                <div class="source-text">
+                    Navigate between tabs to explore different aspects of prostate cancer epidemiology. Use the "Your Risk" tab to learn about personalized risk based on age and race. Download any chart as PNG using the camera icon in the top right.
+                </div>
+            </div>
         </div>
     </div>
 
-</div><!-- /container -->
-
-<div class="footer">
-    <p>Prostate Cancer Statistics Dashboard &nbsp;&middot;&nbsp; Data Science Capstone Project &nbsp;&middot;&nbsp; College Senior Edition</p>
-    <p>Last updated: March 2026 &nbsp;&middot;&nbsp; Data sources: SEER, CDC, NCHS</p>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!--  EMBEDDED DATA + CHARTS                                            -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- FOOTER -->
+<div class="footer">
+    <p><strong>Prostate Cancer Statistics Dashboard</strong> &nbsp;·&nbsp; March 2026</p>
+    <p>Data from SEER 22 (NCI) &nbsp;·&nbsp; 1999–2022 &nbsp;·&nbsp; 51 States &amp; DC</p>
+    <p style="opacity: 0.5; font-size: 0.75rem;">Educational tool for epidemiological analysis. Not a substitute for professional medical advice.</p>
+</div>
+
 <script>
     const RAW = {
       incidence: [{"year":2000,"stage":"Localized","rate":153.1},{"year":2001,"stage":"Localized","rate":149.8},{"year":2002,"stage":"Localized","rate":148.2},{"year":2003,"stage":"Localized","rate":143.5},{"year":2004,"stage":"Localized","rate":140.2},{"year":2005,"stage":"Localized","rate":136.8},{"year":2006,"stage":"Localized","rate":132.4},{"year":2007,"stage":"Localized","rate":128.9},{"year":2008,"stage":"Localized","rate":118.4},{"year":2009,"stage":"Localized","rate":112.6},{"year":2010,"stage":"Localized","rate":106.3},{"year":2011,"stage":"Localized","rate":102.1},{"year":2012,"stage":"Localized","rate":91.8},{"year":2013,"stage":"Localized","rate":84.2},{"year":2014,"stage":"Localized","rate":76.2},{"year":2015,"stage":"Localized","rate":78.4},{"year":2016,"stage":"Localized","rate":80.1},{"year":2017,"stage":"Localized","rate":82.7},{"year":2018,"stage":"Localized","rate":84.5},{"year":2019,"stage":"Localized","rate":86.2},{"year":2020,"stage":"Localized","rate":82.1},{"year":2021,"stage":"Localized","rate":88.3},{"year":2022,"stage":"Localized","rate":91.0},{"year":2000,"stage":"Distant","rate":8.4},{"year":2001,"stage":"Distant","rate":8.2},{"year":2002,"stage":"Distant","rate":7.9},{"year":2003,"stage":"Distant","rate":7.6},{"year":2004,"stage":"Distant","rate":7.1},{"year":2005,"stage":"Distant","rate":6.9},{"year":2006,"stage":"Distant","rate":6.8},{"year":2007,"stage":"Distant","rate":6.6},{"year":2008,"stage":"Distant","rate":6.5},{"year":2009,"stage":"Distant","rate":6.4},{"year":2010,"stage":"Distant","rate":6.2},{"year":2011,"stage":"Distant","rate":6.4},{"year":2012,"stage":"Distant","rate":6.8},{"year":2013,"stage":"Distant","rate":7.1},{"year":2014,"stage":"Distant","rate":7.4},{"year":2015,"stage":"Distant","rate":7.9},{"year":2016,"stage":"Distant","rate":8.2},{"year":2017,"stage":"Distant","rate":8.8},{"year":2018,"stage":"Distant","rate":9.5},{"year":2019,"stage":"Distant","rate":10.1},{"year":2020,"stage":"Distant","rate":10.8},{"year":2021,"stage":"Distant","rate":11.9},{"year":2022,"stage":"Distant","rate":12.6},{"year":2000,"stage":"Regional","rate":14.2},{"year":2002,"stage":"Regional","rate":13.8},{"year":2004,"stage":"Regional","rate":13.1},{"year":2006,"stage":"Regional","rate":12.4},{"year":2008,"stage":"Regional","rate":11.8},{"year":2010,"stage":"Regional","rate":11.2},{"year":2012,"stage":"Regional","rate":10.6},{"year":2014,"stage":"Regional","rate":9.8},{"year":2016,"stage":"Regional","rate":9.5},{"year":2018,"stage":"Regional","rate":9.8},{"year":2020,"stage":"Regional","rate":10.1},{"year":2022,"stage":"Regional","rate":10.4}],
       mortality: [{"year":1999,"rate":33.2},{"year":2000,"rate":31.8},{"year":2001,"rate":30.4},{"year":2002,"rate":28.9},{"year":2003,"rate":27.5},{"year":2004,"rate":26.1},{"year":2005,"rate":25.0},{"year":2006,"rate":23.8},{"year":2007,"rate":22.7},{"year":2008,"rate":21.9},{"year":2009,"rate":21.1},{"year":2010,"rate":20.6},{"year":2011,"rate":20.0},{"year":2012,"rate":19.8},{"year":2013,"rate":19.5},{"year":2014,"rate":19.3},{"year":2015,"rate":19.1},{"year":2016,"rate":19.0},{"year":2017,"rate":19.2},{"year":2018,"rate":19.3},{"year":2019,"rate":19.4},{"year":2020,"rate":19.6},{"year":2021,"rate":19.5},{"year":2022,"rate":19.6}],
+      total_incidence: [
+        {year:2000,rate:175.7},{year:2001,rate:168.3},{year:2002,rate:167.1},
+        {year:2003,rate:162.1},{year:2004,rate:158.3},{year:2005,rate:151.6},
+        {year:2006,rate:146.2},{year:2007,rate:141.4},{year:2008,rate:131.8},
+        {year:2009,rate:125.4},{year:2010,rate:121.8},{year:2011,rate:115.2},
+        {year:2012,rate:106.2},{year:2013,rate:98.4},{year:2014,rate:90.1},
+        {year:2015,rate:93.8},{year:2016,rate:97.1},{year:2017,rate:99.6},
+        {year:2018,rate:104.2},{year:2019,rate:107.8},{year:2020,rate:104.1},
+        {year:2021,rate:110.2},{year:2022,rate:115.6}
+      ],
       survival: [{"stage":"Localized","pct":99.9,"cases":76},{"stage":"Regional","pct":99.9,"cases":13},{"stage":"Distant","pct":38.0,"cases":8},{"stage":"Unknown","pct":77.6,"cases":3}],
       age: [{"group":"<45","pct":0.6,"target":false},{"group":"45-54","pct":8.6,"target":true},{"group":"55-64","pct":30.5,"target":true},{"group":"65-74","pct":36.1,"target":false},{"group":"75-84","pct":18.9,"target":false},{"group":"85+","pct":5.3,"target":false}],
       race: [{"name":"Non-Hispanic Black","inc":175.2,"mort":37.9},{"name":"Non-Hispanic White","inc":109.3,"mort":18.1},{"name":"Hispanic","inc":96.4,"mort":15.8},{"name":"NH Asian/PI","inc":60.3,"mort":9.2},{"name":"NH AIAN","inc":78.2,"mort":22.4}],
@@ -874,7 +975,8 @@
     const plotConfig = {
         responsive: true,
         displaylogo: false,
-        modeBarButtonsToRemove: ['lasso2d', 'select2d']
+        modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+        toImageButtonOptions: { format: 'png', filename: 'prostate_cancer_chart', height: 600, width: 1200, scale: 2 }
     };
 
     const layoutDefaults = {
@@ -887,34 +989,107 @@
         hovermode: 'x unified'
     };
 
+    // Linear regression utility
+    function linearRegression(xArr, yArr) {
+        const n = xArr.length;
+        const sumX = xArr.reduce((a,b) => a+b, 0);
+        const sumY = yArr.reduce((a,b) => a+b, 0);
+        const sumXY = xArr.reduce((s,x,i) => s+x*yArr[i], 0);
+        const sumX2 = xArr.reduce((s,x) => s+x*x, 0);
+        const slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX);
+        const intercept = (sumY - slope*sumX) / n;
+        const residuals = yArr.map((y,i) => y - (slope*xArr[i] + intercept));
+        const se = Math.sqrt(residuals.reduce((s,r) => s+r*r, 0) / (n-2));
+        return {slope, intercept, se};
+    }
+
+    // Hide loader after first render
+    let firstRenderDone = false;
+    function hideLoader() {
+        if (!firstRenderDone) {
+            firstRenderDone = true;
+            const loader = document.getElementById('plotly-loader');
+            if (loader) { loader.classList.add('hidden'); }
+        }
+    }
+
+    // ===== SPARKLINES =====
+    function renderSparklines() {
+        window.onPlotlyReady(function() {
+            // Incidence sparkline
+            const incTrace = {
+                x: RAW.total_incidence.map(d => d.year),
+                y: RAW.total_incidence.map(d => d.rate),
+                mode: 'lines',
+                line: {color: '#8A9A8B', width: 2},
+                fill: 'tozeroy',
+                fillcolor: 'rgba(138,154,139,0.15)',
+                hovertemplate: '%{y:.1f}<extra></extra>'
+            };
+            const incLayout = {
+                ...layoutDefaults,
+                margin: {t:0, b:0, l:0, r:0},
+                xaxis: {...layoutDefaults.xaxis, showgrid:false, zeroline:false, showticklabels:false},
+                yaxis: {...layoutDefaults.yaxis, showgrid:false, zeroline:false, showticklabels:false},
+                hovermode: 'x'
+            };
+            Plotly.newPlot('spark-incidence', [incTrace], incLayout, {responsive:true, displaylogo:false});
+
+            // Mortality sparkline
+            const mortTrace = {
+                x: RAW.mortality.map(d => d.year),
+                y: RAW.mortality.map(d => d.rate),
+                mode: 'lines',
+                line: {color: '#9B8FAC', width: 2},
+                fill: 'tozeroy',
+                fillcolor: 'rgba(155,143,172,0.15)',
+                hovertemplate: '%{y:.1f}<extra></extra>'
+            };
+            const mortLayout = {
+                ...layoutDefaults,
+                margin: {t:0, b:0, l:0, r:0},
+                xaxis: {...layoutDefaults.xaxis, showgrid:false, zeroline:false, showticklabels:false},
+                yaxis: {...layoutDefaults.yaxis, showgrid:false, zeroline:false, showticklabels:false},
+                hovermode: 'x'
+            };
+            Plotly.newPlot('spark-mortality', [mortTrace], mortLayout, {responsive:true, displaylogo:false});
+            hideLoader();
+        });
+    }
+
     // ===== OVERVIEW TAB CHARTS =====
     function renderTrendsPreview() {
-        const localized = RAW.incidence.filter(d => d.stage === 'Localized');
-        const distant   = RAW.incidence.filter(d => d.stage === 'Distant');
-        const trace1 = { x: localized.map(d => d.year), y: localized.map(d => d.rate), mode: 'lines', name: 'Localized', line: {color: '#8A9A8B', width: 2} };
-        const trace2 = { x: distant.map(d => d.year),   y: distant.map(d => d.rate),   mode: 'lines', name: 'Distant',   line: {color: '#C17F5C', width: 2} };
-        const layout = { ...layoutDefaults, title: 'Incidence Trends (2000-2022)', yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'} };
-        Plotly.newPlot('chart-trends-preview', [trace1, trace2], layout, plotConfig);
+        window.onPlotlyReady(function() {
+            const localized = RAW.incidence.filter(d => d.stage === 'Localized');
+            const distant   = RAW.incidence.filter(d => d.stage === 'Distant');
+            const trace1 = { x: localized.map(d => d.year), y: localized.map(d => d.rate), mode: 'lines', name: 'Localized', line: {color: '#8A9A8B', width: 2} };
+            const trace2 = { x: distant.map(d => d.year),   y: distant.map(d => d.rate),   mode: 'lines', name: 'Distant',   line: {color: '#C17F5C', width: 2} };
+            const layout = { ...layoutDefaults, title: 'Incidence Trends (2000-2022)', yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'} };
+            Plotly.newPlot('chart-trends-preview', [trace1, trace2], layout, plotConfig);
+            hideLoader();
+        });
     }
 
     function renderSurvivalPreview() {
-        const data = RAW.survival;
-        const trace = {
-            x: data.map(d => d.stage),
-            y: data.map(d => d.pct),
-            type: 'bar',
-            marker: { color: ['#8A9A8B', '#B5C1B6', '#C17F5C', '#C4B9A8'] },
-            text: data.map(d => d.pct.toFixed(1) + '%'),
-            textposition: 'outside',
-            textfont: { color: '#2C2C2C', size: 12 }
-        };
-        const layout = {
-            ...layoutDefaults,
-            title: '5-Year Survival by Stage',
-            xaxis: { ...layoutDefaults.xaxis, type: 'category' },
-            yaxis: { ...layoutDefaults.yaxis, title: 'Survival %', range: [0, 115] }
-        };
-        Plotly.newPlot('chart-survival-preview', [trace], layout, plotConfig);
+        window.onPlotlyReady(function() {
+            const data = RAW.survival;
+            const trace = {
+                x: data.map(d => d.stage),
+                y: data.map(d => d.pct),
+                type: 'bar',
+                marker: { color: ['#8A9A8B', '#B5C1B6', '#C17F5C', '#C4B9A8'] },
+                text: data.map(d => d.pct.toFixed(1) + '%'),
+                textposition: 'outside',
+                textfont: { color: '#2C2C2C', size: 12 }
+            };
+            const layout = {
+                ...layoutDefaults,
+                title: '5-Year Survival by Stage',
+                xaxis: { ...layoutDefaults.xaxis, type: 'category' },
+                yaxis: { ...layoutDefaults.yaxis, title: 'Survival %', range: [0, 115] }
+            };
+            Plotly.newPlot('chart-survival-preview', [trace], layout, plotConfig);
+        });
     }
 
     // ===== TRENDS TAB CHARTS =====
@@ -926,355 +1101,576 @@
     }
 
     function renderTrendsFull() {
-        const incData   = getIncidenceByStage(currentStageFilter);
-        const localized = incData.filter(d => d.stage === 'Localized');
-        const distant   = incData.filter(d => d.stage === 'Distant');
-        const regional  = incData.filter(d => d.stage === 'Regional');
+        window.onPlotlyReady(function() {
+            const incData   = getIncidenceByStage(currentStageFilter);
+            const localized = incData.filter(d => d.stage === 'Localized');
+            const distant   = incData.filter(d => d.stage === 'Distant');
+            const regional  = incData.filter(d => d.stage === 'Regional');
 
-        const trace1 = { x: localized.map(d => d.year), y: localized.map(d => d.rate), mode: 'lines', name: 'Localized', line: {color: '#8A9A8B', width: 3}, visible: currentStageFilter === 'all' || currentStageFilter === 'localized' };
-        const trace2 = { x: distant.map(d => d.year),   y: distant.map(d => d.rate),   mode: 'lines', name: 'Distant',   line: {color: '#C17F5C', width: 3}, visible: currentStageFilter === 'all' || currentStageFilter === 'distant' };
-        const trace3 = { x: regional.map(d => d.year),  y: regional.map(d => d.rate),  mode: 'lines', name: 'Regional',  line: {color: '#C4A882', width: 3}, visible: currentStageFilter === 'all' || currentStageFilter === 'regional' };
-        const trace4 = { x: RAW.mortality.map(d => d.year), y: RAW.mortality.map(d => d.rate), mode: 'lines', name: 'Mortality', line: {color: '#9B8FAC', width: 3, dash: 'dash'} };
+            // Get last 8 years for projection
+            const last8Years = RAW.total_incidence.slice(-8);
+            const last8LocYears = localized.slice(-8);
+            const last8DistYears = distant.slice(-8);
+            const last8RegYears = regional.slice(-8);
+            const last8MortYears = RAW.mortality.slice(-8);
 
-        const layout = {
-            ...layoutDefaults,
-            title: 'Incidence & Mortality Trends by Stage (with USPSTF Recommendations)',
-            yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'},
-            shapes: [
-                { type: 'line', x0: 2012, x1: 2012, y0: 0, y1: 160, line: {color: '#C17F5C', width: 1.5, dash: 'dash'} },
-                { type: 'line', x0: 2018, x1: 2018, y0: 0, y1: 160, line: {color: '#C4A882', width: 1.5, dash: 'dash'} }
-            ],
-            annotations: [
-                { x: 2012, y: 155, text: '2012: USPSTF<br/>Recommendation', showarrow: false, font: {size: 10, color: '#C17F5C'}, xanchor: 'center' },
-                { x: 2018, y: 155, text: '2018: USPSTF<br/>Update',          showarrow: false, font: {size: 10, color: '#C4A882'}, xanchor: 'center' }
-            ]
-        };
-        Plotly.newPlot('chart-trends-full', [trace1, trace2, trace3, trace4], layout, plotConfig);
+            // Projections
+            const projYears = [2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
+
+            // Total projection
+            const totReg = linearRegression(last8Years.map(d=>d.year), last8Years.map(d=>d.rate));
+            const totProj = projYears.map(y => totReg.slope*y + totReg.intercept);
+            const totProjUpper = projYears.map((y,i) => totProj[i] + 1.96*totReg.se);
+            const totProjLower = projYears.map((y,i) => totProj[i] - 1.96*totReg.se);
+
+            // Localized projection
+            const locReg = linearRegression(last8LocYears.map(d=>d.year), last8LocYears.map(d=>d.rate));
+            const locProj = projYears.map(y => locReg.slope*y + locReg.intercept);
+            const locProjUpper = projYears.map((y,i) => locProj[i] + 1.96*locReg.se);
+            const locProjLower = projYears.map((y,i) => locProj[i] - 1.96*locReg.se);
+
+            // Distant projection
+            const distReg = linearRegression(last8DistYears.map(d=>d.year), last8DistYears.map(d=>d.rate));
+            const distProj = projYears.map(y => distReg.slope*y + distReg.intercept);
+            const distProjUpper = projYears.map((y,i) => distProj[i] + 1.96*distReg.se);
+            const distProjLower = projYears.map((y,i) => distProj[i] - 1.96*distReg.se);
+
+            // Regional projection
+            const regReg = linearRegression(last8RegYears.map(d=>d.year), last8RegYears.map(d=>d.rate));
+            const regProj = projYears.map(y => regReg.slope*y + regReg.intercept);
+            const regProjUpper = projYears.map((y,i) => regProj[i] + 1.96*regReg.se);
+            const regProjLower = projYears.map((y,i) => regProj[i] - 1.96*regReg.se);
+
+            // Mortality projection
+            const mortReg = linearRegression(last8MortYears.map(d=>d.year), last8MortYears.map(d=>d.rate));
+            const mortProj = projYears.map(y => mortReg.slope*y + mortReg.intercept);
+            const mortProjUpper = projYears.map((y,i) => mortProj[i] + 1.96*mortReg.se);
+            const mortProjLower = projYears.map((y,i) => mortProj[i] - 1.96*mortReg.se);
+
+            const trace1 = {
+                x: localized.map(d => d.year).concat(projYears),
+                y: localized.map(d => d.rate).concat(locProj),
+                mode: 'lines',
+                name: 'Localized',
+                line: {color: '#8A9A8B', width: 3},
+                visible: currentStageFilter === 'all' || currentStageFilter === 'localized'
+            };
+            const trace1Band = {
+                x: projYears.concat(projYears.slice().reverse()),
+                y: locProjUpper.concat(locProjLower.slice().reverse()),
+                fill: 'toself',
+                name: 'Localized 95% CI',
+                fillcolor: 'rgba(138,154,139,0.2)',
+                line: {color: 'rgba(0,0,0,0)'},
+                showlegend: false,
+                visible: currentStageFilter === 'all' || currentStageFilter === 'localized'
+            };
+
+            const trace2 = {
+                x: distant.map(d => d.year).concat(projYears),
+                y: distant.map(d => d.rate).concat(distProj),
+                mode: 'lines',
+                name: 'Distant',
+                line: {color: '#C17F5C', width: 3, dash: 'solid'},
+                visible: currentStageFilter === 'all' || currentStageFilter === 'distant'
+            };
+            const trace2Band = {
+                x: projYears.concat(projYears.slice().reverse()),
+                y: distProjUpper.concat(distProjLower.slice().reverse()),
+                fill: 'toself',
+                name: 'Distant 95% CI',
+                fillcolor: 'rgba(193,127,92,0.2)',
+                line: {color: 'rgba(0,0,0,0)'},
+                showlegend: false,
+                visible: currentStageFilter === 'all' || currentStageFilter === 'distant'
+            };
+
+            const trace3 = {
+                x: regional.map(d => d.year).concat(projYears),
+                y: regional.map(d => d.rate).concat(regProj),
+                mode: 'lines',
+                name: 'Regional',
+                line: {color: '#C4A882', width: 3},
+                visible: currentStageFilter === 'all' || currentStageFilter === 'regional'
+            };
+            const trace3Band = {
+                x: projYears.concat(projYears.slice().reverse()),
+                y: regProjUpper.concat(regProjLower.slice().reverse()),
+                fill: 'toself',
+                name: 'Regional 95% CI',
+                fillcolor: 'rgba(196,168,130,0.2)',
+                line: {color: 'rgba(0,0,0,0)'},
+                showlegend: false,
+                visible: currentStageFilter === 'all' || currentStageFilter === 'regional'
+            };
+
+            const trace4 = {
+                x: RAW.mortality.map(d => d.year).concat(projYears),
+                y: RAW.mortality.map(d => d.rate).concat(mortProj),
+                mode: 'lines',
+                name: 'Mortality',
+                line: {color: '#9B8FAC', width: 3, dash: 'dash'}
+            };
+            const trace4Band = {
+                x: projYears.concat(projYears.slice().reverse()),
+                y: mortProjUpper.concat(mortProjLower.slice().reverse()),
+                fill: 'toself',
+                name: 'Mortality 95% CI',
+                fillcolor: 'rgba(155,143,172,0.2)',
+                line: {color: 'rgba(0,0,0,0)'},
+                showlegend: false
+            };
+
+            const layout = {
+                ...layoutDefaults,
+                title: 'Incidence & Mortality Trends by Stage with Projections to 2030',
+                yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'},
+                xaxis: {
+                    ...layoutDefaults.xaxis,
+                    rangeslider: { visible: true, thickness: 0.06, bgcolor: '#EDE9E3' }
+                },
+                shapes: [
+                    { type: 'line', x0: 2012, x1: 2012, y0: 0, y1: 160, line: {color: '#C17F5C', width: 1.5, dash: 'dash'} },
+                    { type: 'line', x0: 2018, x1: 2018, y0: 0, y1: 160, line: {color: '#C4A882', width: 1.5, dash: 'dash'} },
+                    { type: 'line', x0: 2022, x1: 2022, y0: 0, y1: 160, line: {color: '#8A9A8B', width: 2, dash: 'dot'} }
+                ],
+                annotations: [
+                    { x: 2012, y: 155, text: '2012: USPSTF<br/>Recommendation', showarrow: false, font: {size: 10, color: '#C17F5C'}, xanchor: 'center' },
+                    { x: 2018, y: 155, text: '2018: USPSTF<br/>Update',          showarrow: false, font: {size: 10, color: '#C4A882'}, xanchor: 'center' },
+                    { x: 2025.5, y: 155, text: 'Projection →',          showarrow: false, font: {size: 10, color: '#8A9A8B'}, xanchor: 'center' }
+                ]
+            };
+            Plotly.newPlot('chart-trends-full', [trace1Band, trace1, trace2Band, trace2, trace3Band, trace3, trace4Band, trace4], layout, plotConfig);
+            hideLoader();
+        });
     }
 
     function renderStagesArea() {
-        const localized = RAW.incidence.filter(d => d.stage === 'Localized');
-        const distant   = RAW.incidence.filter(d => d.stage === 'Distant');
-        const trace1 = { x: localized.map(d => d.year), y: localized.map(d => d.rate), mode: 'lines', name: 'Localized', line: {color: '#8A9A8B', width: 2}, fill: 'tozeroy', fillcolor: 'rgba(138,154,139,0.12)' };
-        const trace2 = { x: distant.map(d => d.year),   y: distant.map(d => d.rate),   mode: 'lines', name: 'Distant',   line: {color: '#C17F5C', width: 2} };
-        const layout = {
-            ...layoutDefaults,
-            title: 'Incidence by Stage Over Time',
-            yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'},
-            shapes: [
-                { type: 'rect', x0: 2012, x1: 2014, y0: 0, y1: 160, fillcolor: 'rgba(193,127,92,0.07)',  line: {width: 0} },
-                { type: 'rect', x0: 2018, x1: 2020, y0: 0, y1: 160, fillcolor: 'rgba(196,168,130,0.07)', line: {width: 0} }
-            ]
-        };
-        Plotly.newPlot('chart-stages-area', [trace1, trace2], layout, plotConfig);
+        window.onPlotlyReady(function() {
+            const localized = RAW.incidence.filter(d => d.stage === 'Localized');
+            const distant   = RAW.incidence.filter(d => d.stage === 'Distant');
+            const trace1 = { x: localized.map(d => d.year), y: localized.map(d => d.rate), mode: 'lines', name: 'Localized', line: {color: '#8A9A8B', width: 2}, fill: 'tozeroy', fillcolor: 'rgba(138,154,139,0.12)' };
+            const trace2 = { x: distant.map(d => d.year),   y: distant.map(d => d.rate),   mode: 'lines', name: 'Distant',   line: {color: '#C17F5C', width: 2} };
+            const layout = {
+                ...layoutDefaults,
+                title: 'Incidence by Stage Over Time',
+                yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'},
+                xaxis: {...layoutDefaults.xaxis, title: 'Year'}
+            };
+            Plotly.newPlot('chart-stages-area', [trace1, trace2], layout, plotConfig);
+        });
     }
 
     // ===== DISPARITIES TAB CHARTS =====
-    let currentMetric = 'incidence';
+    let currentRaceMetric = 'incidence';
 
-    function renderRaceBar() {
-        const metric = currentMetric;
-        const key    = metric === 'incidence' ? 'inc' : 'mort';
-        const names  = RAW.race.map(d => d.name).reverse();
-        const values = RAW.race.map(d => d[key]).reverse();
-        const avgValue = values.reduce((a, b) => a + b, 0) / values.length;
+    function renderRaceLollipop() {
+        window.onPlotlyReady(function() {
+            const data = RAW.race;
+            const metric = currentRaceMetric;
+            const values = data.map(d => d[metric === 'incidence' ? 'inc' : 'mort']);
+            const colors = ['#9B8FAC', '#8A9A8B', '#C4A882', '#B5C1B6', '#C17F5C'];
 
-        const trace = {
-            y: names, x: values, type: 'bar', orientation: 'h',
-            marker: { color: ['#C4B9A8', '#8A9A8B', '#5A7A5C', '#3D5E3F', '#2A4A2C'].reverse() },
-            text: values.map(v => v.toFixed(1)),
-            textposition: 'outside'
-        };
-        const layout = {
-            ...layoutDefaults,
-            margin: {t:50, b:55, l:180, r:100},
-            title: metric === 'incidence' ? 'Incidence Rate by Race/Ethnicity (2022)' : 'Mortality Rate by Race/Ethnicity (2022)',
-            xaxis: {...layoutDefaults.xaxis, title: metric === 'incidence' ? 'Incidence Rate per 100,000' : 'Mortality Rate per 100,000'},
-            yaxis: {gridcolor:'#EDE9E3'},
-            shapes: [{ type: 'line', x0: avgValue, x1: avgValue, y0: -0.5, y1: 4.5, line: {color: '#C4B9A8', width: 1.5, dash: 'dash'} }],
-            annotations: [{ x: avgValue, y: 4.7, text: 'National Avg', showarrow: false, font: {size: 10, color: '#ABA59F'} }]
-        };
-        Plotly.newPlot('chart-race-bar', [trace], layout, plotConfig);
+            // Line traces
+            const lines = data.map((d, idx) => ({
+                x: [0, values[idx]],
+                y: [idx, idx],
+                mode: 'lines',
+                line: {color: '#D5CECA', width: 2},
+                showlegend: false,
+                hovertemplate: '%{y}<extra></extra>'
+            }));
+
+            // Marker trace
+            const markers = {
+                x: values,
+                y: data.map((d, i) => i),
+                mode: 'markers',
+                marker: {color: colors, size: 14},
+                text: data.map(d => d.name),
+                customdata: values,
+                hovertemplate: '%{text}<br>' + metric.charAt(0).toUpperCase() + metric.slice(1) + ': %{customdata:.1f}<extra></extra>',
+                showlegend: false
+            };
+
+            const layout = {
+                ...layoutDefaults,
+                title: metric === 'incidence' ? 'Incidence by Race (per 100,000)' : 'Mortality by Race (per 100,000)',
+                yaxis: {
+                    ...layoutDefaults.yaxis,
+                    type: 'category',
+                    categoryarray: data.map(d => d.name),
+                    categoryorder: 'array',
+                    showticklabels: true
+                },
+                xaxis: {...layoutDefaults.xaxis, title: 'Rate per 100,000', zeroline: true}
+            };
+
+            Plotly.newPlot('chart-race-bar', lines.concat([markers]), layout, plotConfig);
+        });
     }
 
     function renderRaceTrends() {
-        const races  = ['Non-Hispanic Black', 'Non-Hispanic White', 'Hispanic', 'NH Asian/PI'];
-        const colors = ['#C17F5C', '#8A9A8B', '#C4A882', '#9B8FAC'];
-        const traces = races.map((race, idx) => {
-            const data = RAW.race_trends.filter(d => d.race === race).sort((a, b) => a.year - b.year);
-            return { x: data.map(d => d.year), y: data.map(d => d.rate), mode: 'lines+markers', name: race, line: {color: colors[idx], width: 2}, marker: {size: 5} };
+        window.onPlotlyReady(function() {
+            const races = ['Non-Hispanic Black', 'Non-Hispanic White', 'Hispanic', 'NH Asian/PI'];
+            const colors = ['#9B8FAC', '#8A9A8B', '#C4A882', '#B5C1B6'];
+            const traces = races.map((race, idx) => {
+                const filtered = RAW.race_trends.filter(d => d.race === race);
+                return {
+                    x: filtered.map(d => d.year),
+                    y: filtered.map(d => d.rate),
+                    mode: 'lines',
+                    name: race,
+                    line: {color: colors[idx], width: 2.5}
+                };
+            });
+
+            const layout = {
+                ...layoutDefaults,
+                title: 'Incidence Trends by Race (2000-2022)',
+                yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'},
+                xaxis: {...layoutDefaults.xaxis, title: 'Year'}
+            };
+            Plotly.newPlot('chart-race-trends', traces, layout, plotConfig);
         });
-        const layout = {
-            ...layoutDefaults,
-            title: 'Incidence Trends by Race (2000-2022)',
-            yaxis: {...layoutDefaults.yaxis, title: 'Incidence Rate per 100,000'},
-            shapes: [
-                { type: 'line', x0: 2012, x1: 2012, y0: 40, y1: 240, line: {color: '#C17F5C', width: 1, dash: 'dash'} },
-                { type: 'line', x0: 2018, x1: 2018, y0: 40, y1: 240, line: {color: '#C4A882', width: 1, dash: 'dash'} }
-            ]
-        };
-        Plotly.newPlot('chart-race-trends', traces, layout, plotConfig);
     }
 
     function renderBubble() {
-        const colors = ['#C17F5C', '#8A9A8B', '#C4A882', '#9B8FAC', '#B5C1B6'];
-        const traces = RAW.race.map((d, i) => ({
-            x: [d.inc],
-            y: [d.mort],
-            mode: 'markers',
-            type: 'scatter',
-            name: d.name,
-            marker: { size: d.inc / 4, color: colors[i], opacity: 0.82, line: { color: '#fff', width: 1.5 } }
-        }));
-        const layout = {
-            ...layoutDefaults,
-            title: 'Incidence vs Mortality by Race (Bubble Size = Incidence Rate)',
-            xaxis: { ...layoutDefaults.xaxis, title: 'Incidence Rate (per 100,000)' },
-            yaxis: { ...layoutDefaults.yaxis, title: 'Mortality Rate (per 100,000)' },
-            legend: { orientation: 'v', x: 1.02, y: 1, xanchor: 'left', font: { size: 11, family: 'Inter, sans-serif' } },
-            showlegend: true,
-            hovermode: 'closest'
-        };
-        Plotly.newPlot('chart-bubble', traces, layout, plotConfig);
+        window.onPlotlyReady(function() {
+            const trace = {
+                x: RAW.race.map(d => d.inc),
+                y: RAW.race.map(d => d.mort),
+                mode: 'markers',
+                marker: {
+                    size: RAW.race.map(d => d.inc / 15),
+                    color: ['#9B8FAC', '#8A9A8B', '#C4A882', '#B5C1B6', '#C17F5C'],
+                    line: {color: 'rgba(42,42,40,0.3)', width: 1}
+                },
+                text: RAW.race.map(d => d.name),
+                customdata: RAW.race.map(d => ({inc: d.inc, mort: d.mort})),
+                hovertemplate: '%{text}<br>Incidence: %{customdata.inc:.1f}<br>Mortality: %{customdata.mort:.1f}<extra></extra>'
+            };
+
+            const layout = {
+                ...layoutDefaults,
+                title: 'Incidence vs. Mortality by Race',
+                xaxis: {...layoutDefaults.xaxis, title: 'Incidence (per 100,000)'},
+                yaxis: {...layoutDefaults.yaxis, title: 'Mortality (per 100,000)'}
+            };
+            Plotly.newPlot('chart-bubble', [trace], layout, plotConfig);
+        });
     }
 
     // ===== GEOGRAPHY TAB CHARTS =====
-    let currentGeoMetric = 'incidence';
-
     function renderMap() {
-        const metric     = currentGeoMetric;
-        const key        = metric === 'incidence' ? 'inc' : 'mort';
+        window.onPlotlyReady(function() {
+            const trace = {
+                type: 'choropleth',
+                locations: RAW.states.map(d => d.abbr),
+                z: RAW.states.map(d => d.inc),
+                colorscale: [
+                    [0, '#EFF3EF'],
+                    [0.3, '#8A9A8B'],
+                    [0.7, '#C17F5C'],
+                    [1, '#9B8FAC']
+                ],
+                colorbar: {title: 'Rate per<br>100,000'},
+                text: RAW.states.map(d => d.state),
+                hovertemplate: '%{text}<br>Incidence: %{z:.1f}<extra></extra>',
+                marker: {line: {color: 'rgba(42,42,40,0.2)', width: 0.5}}
+            };
 
-        // Compute national average and rank each state
-        const natAvg  = RAW.states.reduce((sum, d) => sum + d[key], 0) / RAW.states.length;
-        const ranked  = [...RAW.states].sort((a, b) => b[key] - a[key]);
-        const rankMap = {};
-        ranked.forEach((d, i) => { rankMap[d.abbr] = i + 1; });
-
-        // Pack extra data per state for the hover tooltip
-        const customdata = RAW.states.map(d => {
-            const pct  = ((d[key] - natAvg) / natAvg * 100);
-            const sign = pct >= 0 ? '+' : '';
-            return [
-                d.state,                          // [0] full name
-                d.inc.toFixed(1),                 // [1] incidence rate
-                d.mort.toFixed(1),                // [2] mortality rate
-                rankMap[d.abbr],                  // [3] rank
-                sign + pct.toFixed(1) + '%'       // [4] vs national avg
-            ];
+            const layout = {
+                ...layoutDefaults,
+                title: 'Prostate Cancer Incidence by State (2022)',
+                geo: {scope: 'usa', showland: true, landcolor: '#F0ECE6'},
+                margin: {t: 50, b: 20, l: 20, r: 120}
+            };
+            Plotly.newPlot('chart-map', [trace], layout, plotConfig);
+            hideLoader();
         });
-
-        const colorscale = metric === 'incidence'
-            ? [[0,'#EFF3EF'],[0.25,'#C8D9C9'],[0.5,'#8A9A8B'],[0.75,'#5A7A5C'],[1,'#2A4A2C']]
-            : [[0,'#FAF3EE'],[0.25,'#E8C9B0'],[0.5,'#C17F5C'],[0.75,'#9A5A35'],[1,'#6B3318']];
-
-        const trace = {
-            type: 'choropleth',
-            locationmode: 'USA-states',
-            locations: RAW.states.map(d => d.abbr),
-            z: RAW.states.map(d => d[key]),
-            customdata: customdata,
-            hovertemplate:
-                '<b style="font-size:14px">%{customdata[0]}</b><br>' +
-                '─────────────────<br>' +
-                'Incidence&nbsp;&nbsp;&nbsp;%{customdata[1]} / 100K<br>' +
-                'Mortality&nbsp;&nbsp;&nbsp;&nbsp;%{customdata[2]} / 100K<br>' +
-                '─────────────────<br>' +
-                'National rank&nbsp;&nbsp;#%{customdata[3]} of 51<br>' +
-                'vs. avg&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;%{customdata[4]}' +
-                '<extra></extra>',
-            colorscale: colorscale,
-            zmin: Math.min(...RAW.states.map(d => d[key])),
-            zmax: Math.max(...RAW.states.map(d => d[key])),
-            colorbar: {
-                title: { text: 'Rate<br>per 100K', font: {size: 11, family: 'Inter, sans-serif'} },
-                thickness: 14,
-                len: 0.65,
-                x: 1.01,
-                tickfont: {size: 11, family: 'Inter, sans-serif'}
-            },
-            marker: { line: { color: '#FFFFFF', width: 1.2 } }
-        };
-
-        const layout = {
-            paper_bgcolor: 'rgba(0,0,0,0)',
-            font: { family: 'Inter, sans-serif', color: '#2C2C2C' },
-            title: {
-                text: metric === 'incidence'
-                    ? 'Prostate Cancer Incidence by State (2022)'
-                    : 'Prostate Cancer Mortality by State (2022)',
-                font: { family: 'Playfair Display, Georgia, serif', size: 16, color: '#2C2C2C' },
-                x: 0.02, xanchor: 'left'
-            },
-            geo: {
-                scope: 'usa',
-                projection: { type: 'albers usa' },
-                bgcolor: 'rgba(0,0,0,0)',
-                landcolor: '#F0ECE6',
-                lakecolor: '#F7F5F2',
-                subunitcolor: '#FFFFFF',
-                showlakes: true,
-                showland: true,
-                showsubunits: true,
-                subunitwidth: 1.2
-            },
-            hoverlabel: {
-                bgcolor: '#2A2A28',
-                bordercolor: '#2A2A28',
-                font: { family: 'Inter, sans-serif', size: 12, color: '#F7F5F2' },
-                align: 'left'
-            },
-            hovermode: 'closest',
-            margin: { t: 55, b: 10, l: 10, r: 80 }
-        };
-
-        Plotly.newPlot('chart-map', [trace], layout, plotConfig);
     }
 
-    // ===== SURVIVAL & AGE TAB CHARTS =====
+    // Populate state selects for comparison
+    function populateStateSelects() {
+        const stateA = document.getElementById('compare-state-a');
+        const stateB = document.getElementById('compare-state-b');
+        const sorted = RAW.states.slice().sort((a,b) => a.state.localeCompare(b.state));
+        sorted.forEach(s => {
+            const optA = document.createElement('option');
+            optA.value = s.state;
+            optA.textContent = s.state;
+            stateA.appendChild(optA);
+
+            const optB = document.createElement('option');
+            optB.value = s.state;
+            optB.textContent = s.state;
+            stateB.appendChild(optB);
+        });
+    }
+
+    function renderCompare() {
+        window.onPlotlyReady(function() {
+            const stateAVal = document.getElementById('compare-state-a').value;
+            const stateBVal = document.getElementById('compare-state-b').value;
+
+            if (!stateAVal || !stateBVal) return;
+
+            const stateA = RAW.states.find(s => s.state === stateAVal);
+            const stateB = RAW.states.find(s => s.state === stateBVal);
+
+            const traceA = {
+                x: ['Incidence', 'Mortality'],
+                y: [stateA.inc, stateA.mort],
+                name: stateA.state,
+                type: 'bar',
+                marker: {color: '#8A9A8B'}
+            };
+
+            const traceB = {
+                x: ['Incidence', 'Mortality'],
+                y: [stateB.inc, stateB.mort],
+                name: stateB.state,
+                type: 'bar',
+                marker: {color: '#C17F5C'}
+            };
+
+            const layout = {
+                ...layoutDefaults,
+                barmode: 'group',
+                title: stateA.state + ' vs ' + stateB.state,
+                yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'}
+            };
+
+            Plotly.newPlot('chart-compare', [traceA, traceB], layout, plotConfig);
+
+            // Render comparison stats
+            const statsDiv = document.getElementById('compare-stats');
+            const natAvgInc = RAW.states.reduce((s,d)=>s+d.inc,0)/RAW.states.length;
+            const natAvgMort = RAW.states.reduce((s,d)=>s+d.mort,0)/RAW.states.length;
+
+            const rankIncA = RAW.states.filter(s=>s.inc > stateA.inc).length + 1;
+            const rankIncB = RAW.states.filter(s=>s.inc > stateB.inc).length + 1;
+
+            statsDiv.innerHTML = `
+                <div style="background:#FFFFFF;border:1px solid #EAE6E0;border-radius:3px;padding:1.5rem;">
+                    <div style="font-size:0.68rem;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:#ABA59F;margin-bottom:0.5rem;">Rank (Incidence)</div>
+                    <div style="font-family:'Playfair Display',Georgia,serif;font-size:1.5rem;font-weight:500;color:#2C2C2C;">#${rankIncA} of 51</div>
+                    <div style="font-size:0.85rem;color:#ABA59F;margin-top:0.5rem;">${stateA.state}</div>
+                    <div style="font-size:0.85rem;color:#5E5852;margin-top:0.5rem;">${(stateA.inc > natAvgInc ? '+' : '')} ${((stateA.inc-natAvgInc)/natAvgInc*100).toFixed(1)}% vs national</div>
+                </div>
+                <div style="background:#FFFFFF;border:1px solid #EAE6E0;border-radius:3px;padding:1.5rem;">
+                    <div style="font-size:0.68rem;font-weight:600;letter-spacing:0.09em;text-transform:uppercase;color:#ABA59F;margin-bottom:0.5rem;">Rank (Incidence)</div>
+                    <div style="font-family:'Playfair Display',Georgia,serif;font-size:1.5rem;font-weight:500;color:#2C2C2C;">#${rankIncB} of 51</div>
+                    <div style="font-size:0.85rem;color:#ABA59F;margin-top:0.5rem;">${stateB.state}</div>
+                    <div style="font-size:0.85rem;color:#5E5852;margin-top:0.5rem;">${(stateB.inc > natAvgInc ? '+' : '')} ${((stateB.inc-natAvgInc)/natAvgInc*100).toFixed(1)}% vs national</div>
+                </div>
+            `;
+        });
+    }
+
+    // ===== SANKEY DIAGRAM =====
+    function renderSankey() {
+        window.onPlotlyReady(function() {
+            const trace = {
+                type: 'sankey',
+                node: {
+                    pad: 15,
+                    line: {color: '#D5CECA', width: 0.5},
+                    label: ['All Diagnosed (1,000)', 'Localized Stage (760)', 'Regional Stage (130)', 'Distant Stage (80)', 'Unknown Stage (30)', 'Survived 5 Years (942)', 'Did Not Survive (58)'],
+                    color: ['#2A2A28', '#8A9A8B', '#C4A882', '#C17F5C', '#9B8FAC', '#8A9A8B', '#C17F5C']
+                },
+                link: {
+                    source: [0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4],
+                    target: [1, 2, 3, 4, 5, 5, 5, 5, 6, 6, 6, 6],
+                    value: [760, 130, 80, 30, 760, 130, 30, 23, 0, 0, 50, 7],
+                    color: [
+                        'rgba(138,154,139,0.4)', 'rgba(196,168,130,0.4)', 'rgba(193,127,92,0.4)', 'rgba(155,143,172,0.4)',
+                        'rgba(138,154,139,0.3)', 'rgba(196,168,130,0.3)', 'rgba(193,127,92,0.3)', 'rgba(155,143,172,0.3)',
+                        'rgba(138,154,139,0.1)', 'rgba(196,168,130,0.1)', 'rgba(193,127,92,0.5)', 'rgba(155,143,172,0.4)'
+                    ]
+                }
+            };
+
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: {family: 'Inter, sans-serif', color: '#2C2C2C'},
+                margin: {t: 20, b: 20, l: 20, r: 20},
+                height: 380
+            };
+
+            Plotly.newPlot('chart-sankey', [trace], layout, {responsive: true, displaylogo: false});
+        });
+    }
+
+    // ===== SURVIVAL TAB CHARTS =====
     function renderSurvivalBar() {
-        const data = RAW.survival;
-        const trace = {
-            y: data.map(d => d.stage), x: data.map(d => d.pct),
-            type: 'bar', orientation: 'h',
-            marker: { color: ['#8A9A8B', '#B5C1B6', '#C17F5C', '#C4B9A8'] },
-            text: data.map(d => d.pct.toFixed(1) + '%'),
-            textposition: 'inside', textfont: {color: 'white', size: 12}
-        };
-        const layout = { ...layoutDefaults, margin: {t:50, b:55, l:120, r:20}, title: '5-Year Survival by Stage at Diagnosis', xaxis: {...layoutDefaults.xaxis, title: 'Survival %', range: [0, 110]}, yaxis: { ...layoutDefaults.yaxis, type: 'category' } };
-        Plotly.newPlot('chart-survival-bar', [trace], layout, plotConfig);
+        window.onPlotlyReady(function() {
+            const data = RAW.survival;
+            const trace = {
+                x: data.map(d => d.stage),
+                y: data.map(d => d.pct),
+                type: 'bar',
+                marker: { color: ['#8A9A8B', '#B5C1B6', '#C17F5C', '#C4B9A8'] },
+                text: data.map(d => d.pct.toFixed(1) + '%'),
+                textposition: 'outside',
+                textfont: { color: '#2C2C2C', size: 12 }
+            };
+            const layout = {
+                ...layoutDefaults,
+                title: '5-Year Relative Survival by Stage',
+                xaxis: { ...layoutDefaults.xaxis, type: 'category' },
+                yaxis: { ...layoutDefaults.yaxis, title: 'Survival %', range: [0, 115] }
+            };
+            Plotly.newPlot('chart-survival-bar', [trace], layout, plotConfig);
+        });
     }
 
     function renderAgeDistribution() {
-        const data   = RAW.age;
-        const colors = data.map(d => d.target ? '#C17F5C' : '#C8D9C9');
-        const trace  = {
-            x: data.map(d => d.group),
-            y: data.map(d => d.pct),
-            type: 'bar',
-            marker: {
-                color: colors,
-                line: { color: data.map(d => d.target ? '#A0623E' : '#B5CABB'), width: 1.2 }
-            },
-            text: data.map(d => d.pct.toFixed(1) + '%'),
-            textposition: 'outside',
-            textfont: { color: '#2C2C2C', size: 11 }
-        };
-        const layout = {
-            ...layoutDefaults,
-            title: 'Age Distribution of Cases (Screening Target Ages Highlighted)',
-            xaxis: { ...layoutDefaults.xaxis, type: 'category', title: 'Age Group' },
-            yaxis: { ...layoutDefaults.yaxis, title: '% of Cases', range: [0, 46] },
-            /* light terracotta wash behind the two target bars */
-            shapes: [{
-                type: 'rect',
-                xref: 'x', yref: 'paper',
-                x0: 0.5, x1: 2.5,       /* category indices 1 and 2 (45-54, 55-64) */
-                y0: 0,   y1: 1,
-                fillcolor: 'rgba(193,127,92,0.07)',
-                line: { width: 0 }
-            }],
-            annotations: [
-                /* left bracket arm */
-                { x: '45-54', y: 38, ax: 0, ay: 0, xanchor: 'center',
-                  showarrow: true, arrowhead: 0, arrowwidth: 1.8,
-                  arrowcolor: '#C17F5C', axref: 'x', ayref: 'y',
-                  ax: '45-54', ay: 42 },
-                /* right bracket arm */
-                { x: '55-64', y: 38, ax: 0, ay: 0, xanchor: 'center',
-                  showarrow: true, arrowhead: 0, arrowwidth: 1.8,
-                  arrowcolor: '#C17F5C', axref: 'x', ayref: 'y',
-                  ax: '55-64', ay: 42 },
-                /* horizontal crossbar */
-                { x: '45-54', y: 42, ax: 0, ay: 0, xanchor: 'left',
-                  showarrow: true, arrowhead: 0, arrowwidth: 1.8,
-                  arrowcolor: '#C17F5C', axref: 'x', ayref: 'y',
-                  ax: '55-64', ay: 42 },
-                /* label above bracket */
-                { x: '55-64', y: 44.5,
-                  text: '<b>Recommended<br>screening window</b>',
-                  showarrow: false, xanchor: 'right',
-                  font: { size: 10.5, color: '#C17F5C', family: 'Inter, sans-serif' } }
-            ]
-        };
-        Plotly.newPlot('chart-age-dist', [trace], layout, plotConfig);
+        window.onPlotlyReady(function() {
+            const data = RAW.age;
+            const trace = {
+                x: data.map(d => d.group),
+                y: data.map(d => d.pct),
+                type: 'bar',
+                marker: { color: data.map(d => d.target ? '#8A9A8B' : '#C4A882') },
+                text: data.map(d => d.pct.toFixed(1) + '%'),
+                textposition: 'outside',
+                textfont: { color: '#2C2C2C', size: 11 }
+            };
+            const layout = {
+                ...layoutDefaults,
+                title: 'Age Distribution of New Cases',
+                xaxis: { ...layoutDefaults.xaxis, type: 'category', title: 'Age Group' },
+                yaxis: { ...layoutDefaults.yaxis, title: '% of Cases', range: [0, 40] },
+                annotations: [{
+                    x: 1, y: 10, text: 'USPSTF Target<br/>Age Range', showarrow: true, font: {size: 10, color: '#8A9A8B'}, arrowhead: 2
+                }]
+            };
+            Plotly.newPlot('chart-age-dist', [trace], layout, plotConfig);
+        });
     }
 
-    // ===== YOUR RISK TAB =====
+    // ===== RISK PANEL =====
     function updateRiskPanel() {
-        const age      = document.getElementById('risk-age').value;
-        const race     = document.getElementById('risk-race').value;
-        const raceData = RAW.race.find(d => d.name === race);
-        const ageData  = RAW.age.find(d => d.group === age);
+        const age = document.getElementById('risk-age').value;
+        const race = document.getElementById('risk-race').value;
 
+        // Get race data
+        const raceData = RAW.race.find(d => d.name === race);
         document.getElementById('risk-incidence').textContent = raceData.inc.toFixed(1);
         document.getElementById('risk-mortality').textContent = raceData.mort.toFixed(1);
-        document.getElementById('risk-age-pct').textContent   = ageData.pct.toFixed(1) + '%';
 
-        const screeningNote = race === 'Non-Hispanic Black'
-            ? 'Talk to your doctor about screening at age 40-45. Earlier screening discussion recommended for Black men due to higher risk and incidence rates.'
-            : 'Discuss PSA screening at age 55-69. Decision should be individualized based on your personal risk factors and preferences.';
-        document.getElementById('screening-note').textContent = screeningNote;
+        // Get age data
+        const ageData = RAW.age.find(d => d.group === age);
+        document.getElementById('risk-age-pct').textContent = ageData.pct.toFixed(1) + '%';
+
+        // Calculate risk tier based on age and race
+        const raceRatios = {
+            'Non-Hispanic Black': 1.60,
+            'Non-Hispanic White': 1.00,
+            'Hispanic': 0.88,
+            'NH Asian/PI': 0.55,
+            'NH AIAN': 0.71
+        };
+        const ageWeights = {
+            '<45': 0.3,
+            '45-54': 0.8,
+            '55-64': 1.2,
+            '65-74': 1.2,
+            '75-84': 0.7,
+            '85+': 0.3
+        };
+
+        const raceRatio = raceRatios[race] || 1.0;
+        const ageWeight = ageWeights[age] || 0.5;
+        const relativeRisk = (raceRatio * ageWeight).toFixed(2);
+
+        // Determine risk tier
+        let tier = 'Average';
+        let tierClass = 'risk-tier-average';
+        if (relativeRisk < 0.8) { tier = 'Low'; tierClass = 'risk-tier-low'; }
+        else if (relativeRisk > 1.3) { tier = 'Elevated'; tierClass = 'risk-tier-elevated'; }
+        else if (relativeRisk > 1.6) { tier = 'High'; tierClass = 'risk-tier-high'; }
+
+        const tierDiv = document.getElementById('risk-tier-display');
+        tierDiv.innerHTML = `<div style="margin-top:1rem;"><div style="font-size:0.875rem;color:#5E5852;margin-bottom:1rem;">Based on your age and race, your relative risk is approximately <strong>${relativeRisk}×</strong> the average.</div><span class="risk-tier-badge ${tierClass}">${tier} Risk</span></div>`;
     }
 
     // ===== TAB NAVIGATION =====
     document.querySelectorAll('.nav-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            const tabName = tab.dataset.tab;
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tabName = this.getAttribute('data-tab');
+
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            tab.classList.add('active');
+
+            // Show selected tab
             document.getElementById(tabName).classList.add('active');
-            setTimeout(() => {
-                window.onPlotlyReady(function () {
-                    if      (tabName === 'overview')     { renderTrendsPreview(); renderSurvivalPreview(); }
-                    else if (tabName === 'trends')       { renderTrendsFull();    renderStagesArea(); }
-                    else if (tabName === 'disparities')  { renderRaceBar();       renderRaceTrends(); renderBubble(); }
-                    else if (tabName === 'geography')    { renderMap(); }
-                    else if (tabName === 'survival')     { renderSurvivalBar();   renderAgeDistribution(); }
-                });
-            }, 10);
+            this.classList.add('active');
+
+            // Render tab-specific content
+            if (tabName === 'overview') {
+                renderSparklines();
+            } else if (tabName === 'trends') {
+                renderTrendsFull();
+                renderStagesArea();
+            } else if (tabName === 'disparities') {
+                renderRaceLollipop();
+                renderRaceTrends();
+                renderBubble();
+            } else if (tabName === 'survival') {
+                renderSankey();
+                renderSurvivalBar();
+                renderAgeDistribution();
+            }
         });
     });
 
-    // Stage filter
-    document.getElementById('stage-filter').addEventListener('change', (e) => {
-        currentStageFilter = e.target.value;
-        window.onPlotlyReady(function () { renderTrendsFull(); });
+    // Stage filter buttons
+    document.querySelectorAll('#chart-trends-full').closest('.chart-container')?.querySelectorAll('.btn').forEach(btn => {
+        if (btn.hasAttribute('data-filter')) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentStageFilter = this.getAttribute('data-filter');
+                renderTrendsFull();
+            });
+        }
     });
 
-    // Race metric toggle
-    document.querySelectorAll('[data-metric]').forEach(btn => {
-        btn.addEventListener('click', () => {
+    // Disparities metric toggle
+    document.querySelectorAll('.chart-container .btn[data-metric]').forEach(btn => {
+        btn.addEventListener('click', function() {
             document.querySelectorAll('[data-metric]').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentMetric = btn.dataset.metric;
-            window.onPlotlyReady(function () { renderRaceBar(); });
+            this.classList.add('active');
+            currentRaceMetric = this.getAttribute('data-metric');
+            renderRaceLollipop();
         });
     });
 
-    // Geography metric toggle
-    document.querySelectorAll('#geography [data-metric]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('#geography [data-metric]').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentGeoMetric = btn.dataset.metric;
-            window.onPlotlyReady(function () { renderMap(); });
-        });
-    });
+    // State comparison
+    document.getElementById('compare-state-a')?.addEventListener('change', renderCompare);
+    document.getElementById('compare-state-b')?.addEventListener('change', renderCompare);
 
-    // Your Risk panel
-    document.getElementById('risk-age').addEventListener('change', updateRiskPanel);
-    document.getElementById('risk-race').addEventListener('change', updateRiskPanel);
+    // Risk panel
+    document.getElementById('risk-age')?.addEventListener('change', updateRiskPanel);
+    document.getElementById('risk-race')?.addEventListener('change', updateRiskPanel);
 
-    // Initial render — wait for both DOM and Plotly
-    document.addEventListener('DOMContentLoaded', () => {
-        updateRiskPanel(); // no Plotly needed
-        window.onPlotlyReady(function () {
+    // Initialize on DOM ready
+    document.addEventListener('DOMContentLoaded', function() {
+        populateStateSelects();
+        updateRiskPanel();
+        window.onPlotlyReady(function() {
+            renderSparklines();
             renderTrendsPreview();
             renderSurvivalPreview();
         });
     });
 </script>
+
 </body>
 </html>
