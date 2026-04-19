@@ -585,7 +585,7 @@
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="18" y="3" width="4" height="18"/><rect x="10" y="8" width="4" height="13"/><rect x="2" y="13" width="4" height="8"/></svg>
                 </div>
                 <div class="kpi-label">2022 Overall Incidence</div>
-                <div class="kpi-value">165.8/100K</div>
+                <div class="kpi-value">115.6/100K</div>
                 <div id="spark-incidence" style="height:55px;margin-top:0.75rem;"></div>
             </div>
 
@@ -1110,8 +1110,8 @@
     let currentStageFilter = 'all';
 
     function getIncidenceByStage(stage) {
-        if (stage === 'all') return RAW.incidence;
-        return RAW.incidence.filter(d => d.stage === stage);
+        // Always return all data — visibility of each series is controlled by trace.visible
+        return RAW.incidence;
     }
 
     function renderTrendsFull() {
@@ -1249,8 +1249,8 @@
                     { type: 'line', x0: 2022, x1: 2022, y0: 0, y1: 160, line: {color: '#8A9A8B', width: 2, dash: 'dot'} }
                 ],
                 annotations: [
-                    { x: 2012, y: 155, text: '2012: USPSTF<br/>Recommendation', showarrow: false, font: {size: 10, color: '#C17F5C'}, xanchor: 'center' },
-                    { x: 2018, y: 155, text: '2018: USPSTF<br/>Update',          showarrow: false, font: {size: 10, color: '#C4A882'}, xanchor: 'center' },
+                    { x: 2012, y: 155, text: '2012: Routine PSA<br>Screening Discouraged', showarrow: false, font: {size: 10, color: '#C17F5C'}, xanchor: 'center' },
+                    { x: 2018, y: 155, text: '2018: Shared Decision-<br>Making Recommended', showarrow: false, font: {size: 10, color: '#C4A882'}, xanchor: 'center' },
                     { x: 2025.5, y: 155, text: 'Projection →',          showarrow: false, font: {size: 10, color: '#8A9A8B'}, xanchor: 'center' }
                 ]
             };
