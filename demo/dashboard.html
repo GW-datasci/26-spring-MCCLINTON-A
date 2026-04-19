@@ -670,7 +670,7 @@
                 <h3 class="chart-title">Incidence by Stage Over Time</h3>
             </div>
             <div id="chart-stages-area" style="height: 400px;"></div>
-            <p class="chart-caption">Source: SEER 22, NCI · Stacked area showing relative proportions of stage at diagnosis</p>
+            <p class="chart-caption">Source: SEER 22, NCI · Localized-stage cases (shaded area) and distant-stage cases (line) — both age-adjusted rates per 100,000. Note diverging trends after 2012.</p>
         </div>
 
         <div class="insight-box amber">
@@ -694,13 +694,13 @@
                     <button class="btn" data-metric="mortality">Mortality</button>
                 </div>
             </div>
-            <div id="chart-race-bar" style="height: 400px;"></div>
+            <div id="chart-race-bar" style="height: 420px;"></div>
             <p class="chart-caption">Source: SEER 22, NCI · Age-adjusted rates per 100,000 · Non-Hispanic Black men have significantly higher incidence and mortality</p>
         </div>
 
         <div class="chart-container">
             <div class="chart-header">
-                <h3 class="chart-title">Incidence Trends by Race (2000–2022)</h3>
+                <h3 class="chart-title">Incidence Rate Trends by Race/Ethnicity (2000–2022)</h3>
             </div>
             <div id="chart-race-trends" style="height: 400px;"></div>
             <p class="chart-caption">Source: SEER 22, NCI · Age-adjusted rates per 100,000 · Depicts diverging trajectories across racial/ethnic groups</p>
@@ -708,10 +708,10 @@
 
         <div class="chart-container">
             <div class="chart-header">
-                <h3 class="chart-title">Incidence vs. Mortality by Race (Bubble Chart)</h3>
+                <h3 class="chart-title">Incidence vs. Mortality by Race — Who Bears the Highest Burden?</h3>
             </div>
-            <div id="chart-bubble" style="height: 400px;"></div>
-            <p class="chart-caption">Source: SEER 22, NCI · Bubble size = population incidence; Y-axis = mortality rate</p>
+            <div id="chart-bubble" style="height: 460px;"></div>
+            <p class="chart-caption">Source: SEER 22, NCI · Each bubble is a racial/ethnic group. Position = incidence (x) vs. mortality (y). Bubble size reflects relative incidence rate — larger = more cases per 100,000. Hover for exact values.</p>
         </div>
 
         <div class="insight-box red">
@@ -759,7 +759,7 @@
                     <select id="compare-state-b"><option value="">Select State B…</option></select>
                 </div>
             </div>
-            <div id="chart-compare" style="height:300px;"></div>
+            <div id="chart-compare" style="height:380px;"></div>
             <div id="compare-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1.5rem;"></div>
         </div>
     </div>
@@ -1078,7 +1078,12 @@
             const distant   = RAW.incidence.filter(d => d.stage === 'Distant');
             const trace1 = { x: localized.map(d => d.year), y: localized.map(d => d.rate), mode: 'lines', name: 'Localized', line: {color: '#8A9A8B', width: 2} };
             const trace2 = { x: distant.map(d => d.year),   y: distant.map(d => d.rate),   mode: 'lines', name: 'Distant',   line: {color: '#C17F5C', width: 2} };
-            const layout = { ...layoutDefaults, title: 'Incidence Trends (2000-2022)', yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'} };
+            const layout = {
+                ...layoutDefaults,
+                margin: {...layoutDefaults.margin, t: 15},
+                yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'},
+                xaxis: {...layoutDefaults.xaxis, title: 'Year'}
+            };
             Plotly.newPlot('chart-trends-preview', [trace1, trace2], layout, plotConfig);
             hideLoader();
         });
@@ -1098,9 +1103,9 @@
             };
             const layout = {
                 ...layoutDefaults,
-                title: '5-Year Survival by Stage',
-                xaxis: { ...layoutDefaults.xaxis, type: 'category' },
-                yaxis: { ...layoutDefaults.yaxis, title: 'Survival %', range: [0, 115] }
+                margin: {...layoutDefaults.margin, t: 15},
+                xaxis: { ...layoutDefaults.xaxis, type: 'category', title: 'Stage at Diagnosis' },
+                yaxis: { ...layoutDefaults.yaxis, title: '5-Year Survival Rate (%)', range: [0, 115] }
             };
             Plotly.newPlot('chart-survival-preview', [trace], layout, plotConfig);
         });
@@ -1237,8 +1242,8 @@
 
             const layout = {
                 ...layoutDefaults,
-                title: 'Incidence & Mortality Trends by Stage with Projections to 2030',
-                yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'},
+                margin: {...layoutDefaults.margin, t: 15},
+                yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000 (age-adjusted)'},
                 xaxis: {
                     ...layoutDefaults.xaxis,
                     rangeslider: { visible: true, thickness: 0.06, bgcolor: '#EDE9E3' }
@@ -1267,8 +1272,8 @@
             const trace2 = { x: distant.map(d => d.year),   y: distant.map(d => d.rate),   mode: 'lines', name: 'Distant',   line: {color: '#C17F5C', width: 2} };
             const layout = {
                 ...layoutDefaults,
-                title: 'Incidence by Stage Over Time',
-                yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'},
+                margin: {...layoutDefaults.margin, t: 15},
+                yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000 (age-adjusted)'},
                 xaxis: {...layoutDefaults.xaxis, title: 'Year'}
             };
             Plotly.newPlot('chart-stages-area', [trace1, trace2], layout, plotConfig);
@@ -1285,65 +1290,81 @@
             const values = data.map(d => d[metric === 'incidence' ? 'inc' : 'mort']);
             const colors = ['#9B8FAC', '#8A9A8B', '#C4A882', '#B5C1B6', '#C17F5C'];
 
-            // Stem lines — one trace per race using the race name as y
+            // Readable display labels
+            const displayName = n => n
+                .replace('NH Asian/PI', 'Asian/Pacific Islander')
+                .replace('NH AIAN', 'Amer. Indian/Alaska Native');
+            const displayNames = data.map(d => displayName(d.name));
+
+            // Stem lines — one trace per race using display name as y
             const lines = data.map((d, idx) => ({
                 x: [0, values[idx]],
-                y: [d.name, d.name],
+                y: [displayNames[idx], displayNames[idx]],
                 mode: 'lines',
                 line: {color: '#D5CECA', width: 2.5},
                 showlegend: false,
                 hoverinfo: 'skip'
             }));
 
-            // Circle markers
+            // Circle markers with value labels
+            const metricLabel = metric === 'incidence' ? 'Incidence' : 'Mortality';
             const markers = {
                 x: values,
-                y: data.map(d => d.name),
-                mode: 'markers',
+                y: displayNames,
+                mode: 'markers+text',
                 type: 'scatter',
-                marker: {color: colors, size: 14, line: {color: '#fff', width: 1.5}},
-                text: data.map(d => d.name),
+                marker: {color: colors, size: 16, line: {color: '#fff', width: 1.5}},
+                text: values.map(v => v.toFixed(1)),
+                textposition: 'middle right',
+                textfont: {size: 11, color: '#2C2C2C'},
                 customdata: values,
-                hovertemplate: '<b>%{text}</b><br>' + metric.charAt(0).toUpperCase() + metric.slice(1) + ': %{customdata:.1f} per 100K<extra></extra>',
+                hovertemplate: '<b>%{y}</b><br>' + metricLabel + ': %{customdata:.1f} per 100K<extra></extra>',
                 showlegend: false
             };
 
             const layout = {
                 ...layoutDefaults,
                 hovermode: 'closest',
-                title: metric === 'incidence' ? 'Incidence by Race/Ethnicity (per 100,000)' : 'Mortality by Race/Ethnicity (per 100,000)',
+                margin: {...layoutDefaults.margin, t: 15, l: 175},
                 yaxis: {
                     ...layoutDefaults.yaxis,
                     type: 'category',
-                    categoryarray: data.map(d => d.name),
+                    categoryarray: displayNames,
                     categoryorder: 'array'
                 },
-                xaxis: {...layoutDefaults.xaxis, title: 'Rate per 100,000', rangemode: 'tozero'}
+                xaxis: {...layoutDefaults.xaxis, title: metricLabel + ' Rate per 100,000 (age-adjusted)', rangemode: 'tozero'}
             };
 
             Plotly.newPlot('chart-race-bar', [...lines, markers], layout, plotConfig);
+
+            // Update the HTML container title to match active metric
+            const h3 = document.querySelector('#disparities .chart-container h3.chart-title');
+            if (h3) h3.textContent = metricLabel + ' by Race/Ethnicity (2022)';
         });
     }
 
     function renderRaceTrends() {
         window.onPlotlyReady(function() {
             const races = ['Non-Hispanic Black', 'Non-Hispanic White', 'Hispanic', 'NH Asian/PI'];
+            const displayNames = ['Non-Hispanic Black', 'Non-Hispanic White', 'Hispanic', 'Asian/Pacific Islander'];
             const colors = ['#9B8FAC', '#8A9A8B', '#C4A882', '#B5C1B6'];
             const traces = races.map((race, idx) => {
                 const filtered = RAW.race_trends.filter(d => d.race === race);
                 return {
                     x: filtered.map(d => d.year),
                     y: filtered.map(d => d.rate),
-                    mode: 'lines',
-                    name: race,
-                    line: {color: colors[idx], width: 2.5}
+                    mode: 'lines+markers',
+                    name: displayNames[idx],
+                    line: {color: colors[idx], width: 2.5},
+                    marker: {color: colors[idx], size: 5},
+                    hovertemplate: '<b>%{fullData.name}</b><br>Year: %{x}<br>Rate: %{y:.1f} per 100K<extra></extra>'
                 };
             });
 
             const layout = {
                 ...layoutDefaults,
-                title: 'Incidence Trends by Race (2000-2022)',
-                yaxis: {...layoutDefaults.yaxis, title: 'Rate per 100,000'},
+                margin: {...layoutDefaults.margin, t: 15},
+                yaxis: {...layoutDefaults.yaxis, title: 'Incidence Rate per 100,000 (age-adjusted)'},
                 xaxis: {...layoutDefaults.xaxis, title: 'Year'}
             };
             Plotly.newPlot('chart-race-trends', traces, layout, plotConfig);
@@ -1352,25 +1373,42 @@
 
     function renderBubble() {
         window.onPlotlyReady(function() {
+            // Expand abbreviated names for display
+            const displayName = n => n
+                .replace('NH Asian/PI', 'Asian/Pacific Islander')
+                .replace('NH AIAN', 'Amer. Indian/AK Native')
+                .replace('Non-Hispanic ', 'NH ');
+
+            const shortName = n => n
+                .replace('Non-Hispanic Black', 'NH Black')
+                .replace('Non-Hispanic White', 'NH White')
+                .replace('NH Asian/PI', 'Asian/PI')
+                .replace('NH AIAN', 'AIAN');
+
             const trace = {
                 x: RAW.race.map(d => d.inc),
                 y: RAW.race.map(d => d.mort),
-                mode: 'markers',
+                mode: 'markers+text',
                 marker: {
-                    size: RAW.race.map(d => d.inc / 15),
+                    // sqrt scaling gives better visual proportionality
+                    size: RAW.race.map(d => Math.sqrt(d.inc) * 1.6),
                     color: ['#9B8FAC', '#8A9A8B', '#C4A882', '#B5C1B6', '#C17F5C'],
-                    line: {color: 'rgba(42,42,40,0.3)', width: 1}
+                    line: {color: 'rgba(42,42,40,0.25)', width: 1.5},
+                    opacity: 0.85
                 },
-                text: RAW.race.map(d => d.name),
-                customdata: RAW.race.map(d => [d.inc, d.mort]),
-                hovertemplate: '<b>%{text}</b><br>Incidence: %{customdata[0]:.1f}/100K<br>Mortality: %{customdata[1]:.1f}/100K<extra></extra>'
+                text: RAW.race.map(d => shortName(d.name)),
+                textposition: ['top center', 'top center', 'bottom center', 'top center', 'bottom center'],
+                textfont: {size: 11, color: '#2C2C2C', family: 'Inter, sans-serif'},
+                customdata: RAW.race.map(d => [displayName(d.name), d.inc, d.mort]),
+                hovertemplate: '<b>%{customdata[0]}</b><br>Incidence: %{customdata[1]:.1f} per 100K<br>Mortality: %{customdata[2]:.1f} per 100K<extra></extra>'
             };
 
             const layout = {
                 ...layoutDefaults,
-                title: 'Incidence vs. Mortality by Race',
-                xaxis: {...layoutDefaults.xaxis, title: 'Incidence (per 100,000)'},
-                yaxis: {...layoutDefaults.yaxis, title: 'Mortality (per 100,000)'}
+                hovermode: 'closest',
+                margin: {...layoutDefaults.margin, t: 15},
+                xaxis: {...layoutDefaults.xaxis, title: 'Incidence Rate per 100,000 (age-adjusted)', rangemode: 'tozero'},
+                yaxis: {...layoutDefaults.yaxis, title: 'Mortality Rate per 100,000 (age-adjusted)', rangemode: 'tozero'}
             };
             Plotly.newPlot('chart-bubble', [trace], layout, plotConfig);
         });
@@ -1484,7 +1522,7 @@
 
         window.onPlotlyReady(function() {
             // Use % vs national average so incidence + mortality are on same scale
-            const categories = ['Incidence vs Natl Avg', 'Mortality vs Natl Avg'];
+            const categories = ['Incidence Rate', 'Mortality Rate'];
             const pctA = [
                 ((sA.inc  - natAvgInc)  / natAvgInc  * 100),
                 ((sA.mort - natAvgMort) / natAvgMort * 100)
@@ -1522,9 +1560,14 @@
                 ...layoutDefaults,
                 barmode: 'group',
                 hovermode: 'x unified',
-                title: sA.state + ' vs ' + sB.state + ' (% above/below national average)',
+                margin: {...layoutDefaults.margin, t: 40},
+                title: {
+                    text: sA.state + ' vs. ' + sB.state + '<br><span style="font-size:11px;color:#ABA59F;">% above or below U.S. national average</span>',
+                    font: {size: 14, family: 'Playfair Display, Georgia, serif'},
+                    x: 0.02, xanchor: 'left'
+                },
                 xaxis: { ...layoutDefaults.xaxis, type: 'category' },
-                yaxis: { ...layoutDefaults.yaxis, title: '% vs National Average', zeroline: true, zerolinecolor: '#ABA59F' },
+                yaxis: { ...layoutDefaults.yaxis, title: '% Difference from National Average', zeroline: true, zerolinecolor: '#ABA59F', ticksuffix: '%' },
                 shapes: [{ type:'line', x0:-0.5, x1:1.5, y0:0, y1:0, line:{color:'#ABA59F', width:1, dash:'dot'} }]
             };
 
@@ -1611,9 +1654,9 @@
             };
             const layout = {
                 ...layoutDefaults,
-                title: '5-Year Relative Survival by Stage',
-                xaxis: { ...layoutDefaults.xaxis, type: 'category' },
-                yaxis: { ...layoutDefaults.yaxis, title: 'Survival %', range: [0, 115] }
+                margin: {...layoutDefaults.margin, t: 15},
+                xaxis: { ...layoutDefaults.xaxis, type: 'category', title: 'Stage at Diagnosis' },
+                yaxis: { ...layoutDefaults.yaxis, title: '5-Year Survival Rate (%)', range: [0, 115] }
             };
             Plotly.newPlot('chart-survival-bar', [trace], layout, plotConfig);
         });
@@ -1633,16 +1676,30 @@
             };
             const layout = {
                 ...layoutDefaults,
-                title: 'Age Distribution of New Cases',
-                xaxis: { ...layoutDefaults.xaxis, type: 'category', title: 'Age Group' },
-                yaxis: { ...layoutDefaults.yaxis, title: '% of Cases', range: [0, 40] },
-                annotations: [{
-                    x: '55-64', y: 33,
-                    text: '← Recommended screening window',
-                    showarrow: false,
-                    xanchor: 'right',
-                    font: {size: 10, color: '#C17F5C', family: 'Inter, sans-serif'}
-                }]
+                margin: {...layoutDefaults.margin, t: 15},
+                xaxis: { ...layoutDefaults.xaxis, type: 'category', title: 'Age Group (years)' },
+                yaxis: { ...layoutDefaults.yaxis, title: 'Share of All New Cases (%)', range: [0, 43] },
+                annotations: [
+                    {
+                        x: '45-54', y: 41,
+                        text: 'Screening window (45–69)',
+                        showarrow: false,
+                        xanchor: 'left',
+                        font: {size: 10, color: '#8A9A8B', family: 'Inter, sans-serif'},
+                        bgcolor: 'rgba(138,154,139,0.1)',
+                        borderpad: 3
+                    },
+                    {
+                        x: '55-64', y: 32.5,
+                        ax: 0, ay: -30,
+                        text: 'Peak age group',
+                        showarrow: true,
+                        arrowhead: 2,
+                        arrowcolor: '#C17F5C',
+                        arrowsize: 0.8,
+                        font: {size: 10, color: '#C17F5C', family: 'Inter, sans-serif'}
+                    }
+                ]
             };
             Plotly.newPlot('chart-age-dist', [trace], layout, plotConfig);
         });
