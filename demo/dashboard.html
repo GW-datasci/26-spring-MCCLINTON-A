@@ -714,6 +714,14 @@
             <p class="chart-caption">Source: SEER 22, NCI · Each bubble is a racial/ethnic group. Position = incidence (x) vs. mortality (y). Bubble size reflects relative incidence rate — larger = more cases per 100,000. Hover for exact values.</p>
         </div>
 
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3 class="chart-title">Projected Incidence by Race/Ethnicity to 2030 — Will the Gap Close?</h3>
+            </div>
+            <div id="chart-race-proj" style="height: 480px;"></div>
+            <p class="chart-caption">Source: SEER 22, NCI · Solid lines = observed 2000–2022 · Dashed lines = projected 2022–2030 using linear regression on last 5 data points · Shaded bands = 95% confidence interval · Age-adjusted rates per 100,000</p>
+        </div>
+
         <div class="insight-box red">
             <div class="insight-title">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
@@ -1414,6 +1422,90 @@
         });
     }
 
+    // ===== RACE PROJECTIONS CHART =====
+    function renderRaceProjections() {
+        window.onPlotlyReady(function() {
+            const races        = ['Non-Hispanic Black', 'Non-Hispanic White', 'Hispanic', 'NH Asian/PI'];
+            const displayNames = ['Non-Hispanic Black',  'Non-Hispanic White',  'Hispanic',  'Asian/Pacific Islander'];
+            const colors       = ['#9B8FAC', '#8A9A8B', '#C4A882', '#B5C1B6'];
+            // rgba fill versions (15% opacity) for CI bands
+            const fillColors   = [
+                'rgba(155,143,172,0.15)', 'rgba(138,154,139,0.15)',
+                'rgba(196,168,130,0.15)', 'rgba(181,193,182,0.15)'
+            ];
+
+            const projYears = [2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
+            const traces = [];
+
+            races.forEach((race, idx) => {
+                const filtered = RAW.race_trends.filter(d => d.race === race);
+                const histX = filtered.map(d => d.year);
+                const histY = filtered.map(d => d.rate);
+
+                // Regression on last 5 observed data points
+                const last5 = filtered.slice(-5);
+                const reg   = linearRegression(last5.map(d => d.year), last5.map(d => d.rate));
+                const projY       = projYears.map(y => Math.max(0, reg.slope * y + reg.intercept));
+                const projUpper   = projYears.map((y, i) => projY[i] + 1.96 * reg.se);
+                const projLower   = projYears.map((y, i) => Math.max(0, projY[i] - 1.96 * reg.se));
+
+                // 95% CI shaded band
+                traces.push({
+                    x: projYears.concat(projYears.slice().reverse()),
+                    y: projUpper.concat(projLower.slice().reverse()),
+                    fill: 'toself',
+                    fillcolor: fillColors[idx],
+                    line: {color: 'rgba(0,0,0,0)'},
+                    showlegend: false,
+                    hoverinfo: 'skip',
+                    name: displayNames[idx] + ' CI'
+                });
+
+                // Historical solid line
+                traces.push({
+                    x: histX,
+                    y: histY,
+                    mode: 'lines+markers',
+                    name: displayNames[idx],
+                    line: {color: colors[idx], width: 2.5},
+                    marker: {color: colors[idx], size: 6},
+                    hovertemplate: '<b>' + displayNames[idx] + '</b><br>Year: %{x}<br>Rate: %{y:.1f} per 100K<extra></extra>'
+                });
+
+                // Projected dashed line
+                traces.push({
+                    x: projYears,
+                    y: projY,
+                    mode: 'lines',
+                    name: displayNames[idx] + ' (projected)',
+                    line: {color: colors[idx], width: 2, dash: 'dash'},
+                    showlegend: false,
+                    hovertemplate: '<b>' + displayNames[idx] + ' — projected</b><br>Year: %{x}<br>Rate: %{y:.1f} per 100K<extra></extra>'
+                });
+            });
+
+            const layout = {
+                ...layoutDefaults,
+                margin: {...layoutDefaults.margin, t: 15},
+                yaxis: {...layoutDefaults.yaxis, title: 'Incidence Rate per 100,000 (age-adjusted)', rangemode: 'tozero'},
+                xaxis: {...layoutDefaults.xaxis, title: 'Year', range: [1999, 2031]},
+                legend: {orientation: 'h', y: -0.18, x: 0.5, xanchor: 'center'},
+                shapes: [
+                    { type: 'line', x0: 2022, x1: 2022, y0: 0, y1: 240,
+                      line: {color: '#8A9A8B', width: 1.5, dash: 'dot'} }
+                ],
+                annotations: [
+                    { x: 2019, y: 235, text: '← Observed data', showarrow: false,
+                      font: {size: 10, color: '#8A9A8B'}, xanchor: 'right' },
+                    { x: 2025.5, y: 235, text: 'Projected →', showarrow: false,
+                      font: {size: 10, color: '#8A9A8B'}, xanchor: 'left' }
+                ]
+            };
+
+            Plotly.newPlot('chart-race-proj', traces, layout, plotConfig);
+        });
+    }
+
     // ===== GEOGRAPHY TAB CHARTS =====
     let currentGeoMetric = 'incidence';
 
@@ -1777,6 +1869,7 @@
                 renderRaceLollipop();
                 renderRaceTrends();
                 renderBubble();
+                renderRaceProjections();
             } else if (tabName === 'geography') {
                 window.onPlotlyReady(renderMap);
             } else if (tabName === 'survival') {
