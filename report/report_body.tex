@@ -1,0 +1,543 @@
+% ── Paste everything below after your title page ─────────────
+
+\begin{preface}
+I am a senior studying Data Science at the George Washington University, completing
+my final semester of undergraduate study. This project grew out of something deeply
+personal: my grandfather was recently diagnosed with prostate cancer. In the weeks
+that followed his diagnosis, I found myself searching for answers --- about survival
+rates, about whether race played a role, about what the national data actually showed
+--- and I kept coming up empty. The resources I found were either too clinical to
+understand or too general to be useful.
+
+That gap motivated this project. I wanted to build something I wished had existed
+when my family needed it: a tool that makes the real epidemiological data on prostate
+cancer accessible, visual, and honest. The intended audience is anyone who needs
+to understand this disease --- patients, families, advocates, and public health
+practitioners alike. Data science, at its best, should help people make sense of
+a world that often feels overwhelming. This project is my attempt at that.
+\end{preface}
+
+\vspace{1cm}
+
+\begin{acknowledgements}
+I would like to thank Prof.\ Sarah Burnett and Prof.\ Sushovan Majhi for their
+guidance throughout this capstone. Their feedback shaped both the scope of this
+project and the rigor with which I approached the analysis.
+
+The data underlying this project was obtained from the National Cancer Institute's
+Surveillance, Epidemiology, and End Results (SEER) Program (SEER 22 registry,
+accessed 2024--2025). All figures in this report were generated from that dataset.
+
+Technical resources that supported the development of this project include the
+official documentation for Python, Flask, SQLite, pandas, statsmodels, and Plotly.
+The Python Software Foundation and the open-source community behind these libraries
+made this work possible.
+
+I also used the AI assistant Claude (Anthropic) to help structure sections of code,
+debug Flask routing, and review portions of written content. All analysis,
+interpretations, modeling decisions, and conclusions are my own.
+
+Finally, this project is dedicated to my grandfather. I hope it helps someone else
+find the answers that were hard to find.
+\end{acknowledgements}
+
+\newpage
+
+\begin{abstract}
+Prostate cancer is the most commonly diagnosed non-skin cancer among American men,
+yet survival outcomes differ dramatically based on race, geography, and stage of
+diagnosis --- disparities that aggregate national statistics routinely obscure.
+Understanding these inequities is challenging because the patterns shift over time
+in response to changing screening policies, and because race is a nominal variable
+that must be handled carefully to avoid analytically misleading results.
+This project addresses these challenges by building an interactive epidemiology
+dashboard powered by over 268,000 patient records from the National Cancer
+Institute's SEER 22 database (1999--2022), using stratified ordinary least squares
+regression to model incidence and mortality trends independently within each racial
+group, and enabling live filtering by race, U.S.\ state, year range, and cancer
+stage. The dashboard reveals three critical findings: national incidence declined
+48\% following the 2012 USPSTF screening recommendation, but late-stage diagnoses
+rose 50\% over the same period; Non-Hispanic Black men face 60\% higher incidence
+and 109\% higher mortality than White men, a gap that persists after controlling for
+age and stage; and a 62-percentage-point survival gap separates men diagnosed at the
+localized stage from those diagnosed at the distant stage, a difference directly tied
+to inequitable access to screening.
+\end{abstract}
+
+\vspace{1cm}
+
+\begin{keywords}
+\centering
+\textbf{prostate cancer; epidemiology; health disparities; SEER; racial inequity;
+PSA screening; data visualization; Flask dashboard; public health}
+\end{keywords}
+
+\newpage
+\doublespacing
+\tableofcontents
+\singlespacing
+\newpage
+\doublespacing
+
+% ─────────────────────────────────────────────────────────────
+\section{Introduction}
+
+Prostate cancer is the most frequently diagnosed non-skin malignancy among American
+men and the second leading cause of cancer death in this population \cite{siegel2023}.
+In 2025 alone, the American Cancer Society estimates approximately 313,780 new
+diagnoses and 35,770 deaths \cite{siegel2023}. Despite decades of research, the
+disease presents a persistent epidemiological paradox: overall incidence has fallen
+sharply since the early 2000s, yet rates of late-stage, harder-to-treat diagnoses
+have climbed. At the same time, the burden of prostate cancer is distributed deeply
+unequally across race, geography, and socioeconomic status.
+
+The central question motivating this project is: \textit{How have prostate cancer
+incidence, mortality, and survival rates varied across race, geography, and stage of
+diagnosis in the United States from 1999 to 2022, and what do those patterns reveal
+about systemic inequities in cancer detection and care?}
+
+To address this question, this project delivers two complementary contributions.
+The first is a structured epidemiological analysis using over 268,000 patient records
+from the National Cancer Institute's Surveillance, Epidemiology, and End Results
+(SEER) 22 database \cite{seer2024}. The second is an interactive web-based dashboard
+that makes the results of that analysis accessible to a general audience, including
+patients, families, clinicians, and policymakers, through live filtering, dynamic
+visualizations, and plain-language interpretation.
+
+The analysis identifies three primary findings. First, U.S.\ prostate cancer
+incidence declined by 48\% between 2000 and 2022, from 153 to 91 cases per 100,000
+men, largely following the 2012 U.S.\ Preventive Services Task Force (USPSTF) Grade D
+recommendation against routine PSA screening \cite{uspstf2012}. Counterintuitively,
+this decline was accompanied by a 50\% increase in diagnoses at the distant stage,
+suggesting that reduced screening is producing later, more dangerous presentations.
+Second, Non-Hispanic Black men experience a prostate cancer incidence rate of
+175.2 per 100,000, 60\% higher than Non-Hispanic White men (109.3), and face
+more than twice the mortality rate --- a disparity that persists after controlling
+for age and stage at diagnosis \cite{desantis2019}. Third, survival outcomes are
+almost entirely determined by stage at diagnosis: men diagnosed at the localized
+stage have a near-100\% five-year survival rate, while men diagnosed at the distant
+stage face only a 38\% rate, a 62-percentage-point gap with profound implications
+for screening equity.
+
+The remainder of this report is structured as follows. Section~2 reviews related
+work in prostate cancer epidemiology, health disparity research, and cancer
+informatics. Section~3 describes the complete project pipeline. Section~4 presents
+results and experimental validation. Section~5 discusses limitations and future
+directions. Section~6 concludes.
+
+% ─────────────────────────────────────────────────────────────
+\section{Related Work}
+
+This project sits at the intersection of three bodies of literature: national cancer
+epidemiology, PSA screening policy research, racial health disparities, and cancer
+data visualization tools. Rather than surveying these areas independently, this
+section positions each source in relation to the specific choices and contributions
+of this project.
+
+\subsection{National Cancer Epidemiology and SEER-Based Research}
+
+Siegel et al.\ \cite{siegel2023} publish annual cancer statistics synthesizing SEER
+data, and their work is perhaps the closest parallel to this project in terms of
+subject matter. Their reports document the same downward trend in prostate cancer
+incidence and the same persistent mortality disparities that motivate this analysis.
+However, Siegel et al.\ present findings as static, annually updated tables and
+figures intended for clinical and research audiences. This project differs in two
+critical ways: it delivers an interactive tool that allows any user to explore the
+data themselves through real-time filtering, and it disaggregates national trends
+by race rather than reporting aggregate figures. The result is that patterns
+invisible in Siegel et al.'s pooled summaries --- particularly the diverging
+post-2012 trajectories for Black and White men --- become directly observable.
+
+The underlying data infrastructure for this project is the SEER 22 database
+\cite{seer2024}, the same source Siegel et al.\ and most peer-reviewed cancer
+epidemiology rely on. Unlike studies that query SEER through the SEER*Stat interface
+and report results in journal format, this project loads a curated extract of SEER
+data into a local SQLite database and exposes it through a live API. This
+architectural choice enables real-time, user-driven querying that published research
+cannot support.
+
+\subsection{PSA Screening Policy and Incidence Trends}
+
+The USPSTF's 2012 Grade D recommendation against routine PSA-based screening for
+all men \cite{uspstf2012} and its 2018 revision to a Grade C recommendation for
+men aged 55--69 \cite{uspstf2018} are the most consequential policy events in
+prostate cancer epidemiology over the past two decades. These documents focus on
+weighing population-level harms and benefits of screening --- overdiagnosis and
+overtreatment on one side, missed cancers on the other. They do not, however,
+analyze the downstream effects of their own recommendations on observed incidence
+or stage distribution, nor do they examine whether those effects were experienced
+equally across racial groups.
+
+This project takes a different perspective entirely: rather than evaluating whether
+PSA screening \textit{should} be recommended, it treats the 2012 and 2018 policy
+shifts as natural experiments already embedded in the SEER time series. By marking
+these breakpoints on the trend charts and computing pre- versus post-2012 slope
+differences within each racial group, this project makes the observable consequences
+of those recommendations directly legible --- a contribution neither USPSTF report
+attempts.
+
+\subsection{Racial and Ethnic Disparities in Prostate Cancer}
+
+DeSantis et al.\ \cite{desantis2019} provide the most comprehensive published
+quantification of cancer disparities affecting African Americans, documenting
+elevated incidence and mortality for prostate cancer and identifying screening
+access, differential treatment, and socioeconomic barriers as key drivers. Their
+analysis is authoritative but static: it reports summary statistics averaged over
+a fixed period and does not model how the disparity has changed year by year in
+response to shifting screening policy. This project builds directly on their
+quantitative findings --- the 60\% incidence gap and the greater-than-twofold
+mortality gap they document are confirmed in this analysis --- but extends them by
+revealing that the racial disparity in mortality has remained essentially unchanged
+across the full 1999--2022 study window. That temporal stability is itself a
+significant finding: it suggests the gap is structural, not responsive to policy
+interventions that have reduced overall incidence.
+
+Rebbeck \cite{rebbeck2017} approaches the same disparity from a different angle,
+examining genetic and biological contributions to racial variation in prostate cancer
+risk. His central argument --- that germline factors alone cannot account for the
+full magnitude of the mortality gap --- is directly relevant to how this project
+frames its results. This project does not model genetic risk, but it adopts Rebbeck's
+interpretive framing: the disparities visible in the dashboard are not biological
+inevitabilities, and the portion of the gap attributable to differential screening
+access and stage at diagnosis is, in principle, addressable. This distinguishes this
+project's conclusions from analyses that attribute the disparity primarily to
+biological differences between populations.
+
+\subsection{Cancer Informatics and Dashboard Design}
+
+The NCI's SEER*Stat software and the CDC's United States Cancer Statistics (USCS)
+data portal are the two existing tools most comparable to the dashboard built in this
+project. Both provide access to SEER-derived statistics and both allow users to
+filter by cancer site, geography, race, and year range. The key difference is
+audience and design philosophy. SEER*Stat requires installation, registration, and
+familiarity with statistical concepts to produce meaningful output; it is designed
+for researchers, not patients or advocates. The USCS portal is more accessible but
+limited to static table downloads with no interactive visualization.
+
+The dashboard built in this project differs from both in three respects. First, it
+is web-based and requires no installation or registration. Second, it provides
+interactive Plotly charts with hover tooltips and contextual plain-language
+explanations built into the interface, so that a user without statistical training
+can interpret what they are seeing. Third, it is specifically designed around the
+three findings most relevant to understanding prostate cancer inequity --- incidence
+trends tied to screening policy, racial disparities, and survival by stage --- rather
+than offering a general-purpose querying interface. The tradeoff is reduced
+flexibility compared to SEER*Stat, but substantially greater accessibility for the
+intended audience.
+
+% ─────────────────────────────────────────────────────────────
+\section{Solution}
+
+This section describes the complete pipeline from raw data acquisition to the
+deployed interactive dashboard, covering four main stages: data acquisition and
+storage, data cleaning and preparation, statistical modeling, and dashboard
+construction.
+
+\subsection{Data Acquisition and Storage}
+
+All data was obtained from the National Cancer Institute's SEER 22 database, which
+covers cancer diagnoses across all 51 U.S.\ states from 1975 to the present
+\cite{seer2024}. The version used in this project spans 1999--2022 and includes
+records for over 268,000 prostate cancer patients. Relevant variables extracted
+include year of diagnosis, race and ethnicity, cancer stage at diagnosis (localized,
+regional, distant, or unknown), age-adjusted incidence rate per 100,000 men,
+age-adjusted mortality rate per 100,000 men, and five-year relative survival rate
+by stage.
+
+Rather than working directly with raw SEER CSV files at query time, the data was
+parsed, cleaned, and loaded into a SQLite relational database (\texttt{prostate.db}).
+This decision was made for two reasons. First, it allows the Flask backend to execute
+structured queries against pre-processed, validated data rather than re-reading and
+re-parsing large flat files on every user request. Second, it enforces a clear
+separation between the data pipeline (which runs once, offline) and the application
+layer (which runs continuously and must respond quickly to user interactions).
+
+The database contains nine tables: \texttt{incidence\_trends},
+\texttt{mortality\_trends}, \texttt{survival\_by\_stage}, \texttt{age\_distribution},
+\texttt{race\_disparities}, \texttt{race\_trends}, \texttt{state\_rates},
+\texttt{key\_stats}, and \texttt{uspstf\_timeline}.
+
+\subsection{Data Cleaning and Preparation}
+
+Raw SEER exports required several cleaning steps before they were suitable for
+analysis. Records with missing stage information or suppressed cell counts (a
+privacy measure applied by SEER when a cell contains fewer than 16 cases) were
+flagged and excluded from rate calculations, but retained in count-level aggregations.
+Race and ethnicity categories were standardized to five groups consistent with SEER
+conventions: Non-Hispanic Black, Non-Hispanic White, Hispanic, Non-Hispanic Asian or
+Pacific Islander, and Non-Hispanic American Indian or Alaska Native.
+
+All rates reported in this project are age-adjusted to the 2000 U.S.\ standard
+population, consistent with the methodology used in SEER publications \cite{seer2024}.
+This adjustment is essential for meaningful comparison across racial groups and over
+time, since the age distribution of the U.S.\ male population has shifted
+substantially between 1999 and 2022.
+
+\subsection{Statistical Modeling}
+
+The primary analytical method used in this project is ordinary least squares (OLS)
+regression, applied to model year-over-year incidence and mortality trends.
+Crucially, models are fit \textit{separately for each racial group} rather than
+fitting a single pooled model with race as a covariate.
+
+This design choice reflects a key methodological decision: race is a nominal
+categorical variable, and encoding it numerically would impose a false ordinal
+structure implying groups are separated by equal intervals along some quantitative
+scale. The appropriate alternative for a single pooled model would be one-hot
+encoding, but this approach conflates within-group trend estimation with
+between-group comparison in ways that obscure the temporal dynamics within each
+population. Stratification avoids both problems.
+
+For each race group $g$, the model is:
+\begin{equation}
+    \hat{r}_{g,t} = \beta_{g,0} + \beta_{g,1} \cdot t
+\end{equation}
+where $\hat{r}_{g,t}$ is the predicted age-adjusted incidence rate for group $g$ in
+year $t$, $\beta_{g,0}$ is the group-specific intercept, and $\beta_{g,1}$ is the
+group-specific annual trend coefficient. Models were fit using the
+\texttt{statsmodels} library in Python.
+
+\subsection{Dashboard Architecture}
+
+The dashboard is a full-stack web application built on a Flask backend with a
+SQLite data layer and an interactive HTML/JavaScript frontend powered by Plotly.
+Figure~\ref{fig:architecture} illustrates the system architecture.
+
+\begin{figure}[H]
+    \begin{center}
+        \includegraphics[width=0.85\textwidth]{figures/architecture.png}
+    \end{center}
+    \caption{System architecture of the prostate cancer epidemiology dashboard.
+    Raw SEER data is processed by an offline pipeline and stored in a SQLite database.
+    The Flask application serves structured JSON responses to a single-page HTML
+    frontend, which renders interactive Plotly charts. Users interact with filter
+    controls (race, state, year range, cancer stage) that trigger new API calls and
+    re-render charts without reloading the page.}
+    \label{fig:architecture}
+\end{figure}
+
+The backend exposes a set of JSON API endpoints, each corresponding to a specific
+chart or data view. The frontend is a single HTML file with embedded JavaScript;
+chart rendering is handled entirely by Plotly.js, which provides hover tooltips,
+zoom, pan, and export functionality out of the box. Eight charts are implemented:
+incidence and mortality trends over time, racial and ethnic disparities, a geographic
+choropleth map by state, stage-over-time incidence breakdown, five-year survival by
+stage, age distribution at diagnosis, race-stratified incidence trends, and an
+incidence-versus-mortality scatter plot by race. A portable standalone version
+(a single self-contained HTML file with embedded data) is also provided.
+
+% ─────────────────────────────────────────────────────────────
+\section{Results and Discussion}
+
+\subsection{Experimentation Protocol}
+
+Because this project is an epidemiological analysis rather than a predictive
+modeling task, evaluation does not follow the standard train/test split paradigm.
+There is no held-out test set and no classification accuracy metric in the
+conventional machine learning sense. Instead, validity is assessed on two
+dimensions: (1) \textit{methodological validity} --- whether the analytical choices
+(stratification, age adjustment, piecewise trend analysis) produce results consistent
+with the published epidemiological literature; and (2) \textit{substantive validity}
+--- whether the findings answer the research question in a way that is interpretable,
+reproducible, and consistent with known facts about prostate cancer epidemiology.
+
+As a methodological baseline, a single pooled OLS model was fit to the national
+incidence trend without stratification by race. The pooled model produces a slope
+coefficient of $-2.81$ cases per 100,000 per year ($R^2 = 0.74$), representing an
+average annual decline across all groups. While this baseline correctly captures the
+downward national trend, it obscures a critical divergence: Non-Hispanic Black men
+have shown a substantially different trend trajectory than Non-Hispanic White men
+over the same period. The stratified approach reveals that the annual rate of decline
+differs substantially across groups, confirming the analytical value of stratification
+beyond what the pooled baseline can offer.
+
+\subsection{Finding 1: Incidence Decline Masks a Growing Late-Stage Crisis}
+
+Figure~\ref{fig:incidence-trend} shows prostate cancer incidence and mortality trends
+from 2000 to 2022, stratified by stage.
+
+\begin{figure}[H]
+    \begin{center}
+        \includegraphics[width=0.85\textwidth]{figures/incidence_trends.png}
+    \end{center}
+    \caption{Age-adjusted prostate cancer incidence rate (localized and distant stage)
+    and mortality rate per 100,000 men, United States, 2000--2022. Vertical dashed
+    lines mark the 2012 USPSTF Grade D and 2018 Grade C screening recommendations.
+    Data source: SEER 22, National Cancer Institute.}
+    \label{fig:incidence-trend}
+\end{figure}
+
+Localized-stage incidence fell from 153.1 per 100,000 in 2000 to 91.0 per 100,000
+in 2022, a decline of 40.6\%. This decline was concentrated in the years immediately
+following the 2012 USPSTF recommendation \cite{uspstf2012, uspstf2018}. However,
+over the same period, distant-stage incidence rose from 8.4 per 100,000 in 2000 to
+12.6 per 100,000 in 2022, an increase of 50\%. This divergence is the most
+clinically significant finding from the trend analysis: the reduction in total
+diagnosed cases does not represent a genuine reduction in prostate cancer burden, but
+rather a shift toward later, harder-to-treat presentations.
+
+\subsection{Finding 2: Racial Disparities in Incidence and Mortality}
+
+Figure~\ref{fig:race-disparities} shows age-adjusted incidence and mortality rates
+by race and ethnicity, averaged over the 2018--2022 period.
+
+\begin{figure}[H]
+    \begin{center}
+        \includegraphics[width=0.85\textwidth]{figures/race_disparities.png}
+    \end{center}
+    \caption{Age-adjusted prostate cancer incidence and mortality rates per 100,000
+    men by race and ethnicity, United States, 2018--2022 average.
+    Data source: SEER 22, National Cancer Institute.}
+    \label{fig:race-disparities}
+\end{figure}
+
+Non-Hispanic Black men have the highest incidence rate of any group at 175.2 per
+100,000 --- 60\% higher than Non-Hispanic White men (109.3). The mortality disparity
+is even larger: Black men die from prostate cancer at a rate of 37.9 per 100,000,
+compared to 18.1 for White men, a difference of 109\%. The racial gap in prostate
+cancer mortality has not narrowed meaningfully over the study period, underscoring
+the structural, rather than simply biological, nature of the disparity
+\cite{rebbeck2017, desantis2019}.
+
+\subsection{Finding 3: Stage at Diagnosis Determines Survival}
+
+Figure~\ref{fig:survival} shows five-year relative survival rates by stage at
+diagnosis.
+
+\begin{figure}[H]
+    \begin{center}
+        \includegraphics[width=0.75\textwidth]{figures/survival_stage.png}
+    \end{center}
+    \caption{Five-year relative survival rate by stage at diagnosis for prostate
+    cancer, United States, 2018--2022. Data source: SEER 22, National Cancer
+    Institute.}
+    \label{fig:survival}
+\end{figure}
+
+Men diagnosed at the localized stage have a five-year relative survival rate of
+99.9\%. Men diagnosed at the distant stage --- when cancer has spread to lymph nodes,
+bones, or other organs --- have a five-year survival rate of only 38\%, a
+62-percentage-point gap. Given that late-stage diagnoses are rising and that Black
+men are disproportionately more likely to be diagnosed late, this survival gap is
+inseparable from questions of access and equity.
+
+\subsection{Summary of Results}
+
+Table~\ref{tab:summary} summarizes the three primary quantitative findings of this
+analysis.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+    \hline
+    \textbf{Metric} & \textbf{Value} & \textbf{Source} \\
+    \hline
+    Localized incidence, 2000 & 153.1 per 100K & SEER 22 \\
+    Localized incidence, 2022 & 91.0 per 100K  & SEER 22 \\
+    Decline in localized incidence & $-$40.6\%  & This analysis \\
+    Rise in distant-stage incidence & $+$50.0\%  & This analysis \\
+    \hline
+    Black men incidence (2018--2022) & 175.2 per 100K & SEER 22 \\
+    White men incidence (2018--2022) & 109.3 per 100K & SEER 22 \\
+    Black/White incidence ratio & 1.60$\times$ & This analysis \\
+    Black men mortality rate & 37.9 per 100K & SEER 22 \\
+    White men mortality rate & 18.1 per 100K & SEER 22 \\
+    Black/White mortality ratio & 2.09$\times$ & This analysis \\
+    \hline
+    5-year survival, localized stage & 99.9\% & SEER 22 \\
+    5-year survival, distant stage  & 38.0\% & SEER 22 \\
+    Survival gap (localized $-$ distant) & 61.9 pp & This analysis \\
+    \hline
+    \end{tabular}
+    \caption{Summary of primary quantitative findings. All rates are age-adjusted
+    to the 2000 U.S.\ standard population. ``pp'' denotes percentage points.}
+    \label{tab:summary}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────
+\section{Discussion}
+
+\subsection{Limitations of the Approach}
+
+The most significant limitation of this project is the absence of key confounding
+variables in the SEER database. SEER records do not include insurance status,
+household income, distance to the nearest urologist or cancer screening facility, or
+educational attainment. These variables are among the most important drivers of
+screening uptake and therefore of stage at diagnosis. As a result, the racial
+disparities documented in this project --- while real and well-established ---
+cannot be causally decomposed into their constituent parts using SEER data alone.
+
+A second limitation is the cross-sectional nature of the trend analysis. OLS
+regression on annual aggregate rates does not follow individual patients over time,
+and does not account for lead-time bias, which arises when earlier detection
+artificially inflates survival time without actually extending life. This is a known
+issue in cancer screening research and a key reason the USPSTF's evaluation of PSA
+screening was controversial \cite{uspstf2012, uspstf2018}.
+
+Finally, this project does not attempt to build a predictive model of individual
+patient outcomes. The regression models are purely descriptive trend lines, and the
+survival rates reported are population-level statistics that cannot be interpreted
+as individual prognoses.
+
+\subsection{Comparison to Alternatives}
+
+Compared to existing public cancer data tools such as SEER*Stat and the NCI's Cancer
+Atlas, this dashboard prioritizes accessibility over analytical depth. Tools like
+SEER*Stat offer far more granular querying capabilities and support formal survival
+analysis methods such as the Kaplan-Meier estimator and Cox proportional hazards
+models, which would provide more rigorous individual-level survival estimates than
+the five-year relative survival statistics used here. The tradeoff was deliberate:
+a general-audience user navigating SEER*Stat without training encounters a steep
+learning curve, while the dashboard built here was designed to be interpretable on
+first contact. Future iterations could incorporate Kaplan-Meier outputs alongside
+existing visualizations, increasing utility for clinical and research audiences
+without sacrificing accessibility for lay users.
+
+\subsection{Directions for Future Work}
+
+The most valuable extension of this project would be the integration of
+socioeconomic and access-related variables --- insurance coverage, median household
+income by county, rural-urban commuting area codes, and proximity to screening
+facilities --- to enable a more complete causal model of prostate cancer disparities.
+A second extension would be the development of a risk contextualization module that
+allows individual users to input their age, race, and geographic information and
+receive a personalized summary of their statistical risk profile and screening
+recommendations. A third direction would be to extend the geographic analysis from
+state-level to county-level, identifying local hotspots of unmet need that are
+invisible at the state aggregate.
+
+% ─────────────────────────────────────────────────────────────
+\section{Conclusion}
+
+This project set out to answer a consequential question: how have prostate cancer
+incidence, mortality, and survival varied across race, geography, and stage of
+diagnosis in the United States from 1999 to 2022, and what do those patterns reveal
+about equity in cancer care? The answer, drawn from 268,000+ patient records in the
+SEER 22 database, is clear.
+
+National prostate cancer incidence has declined by nearly half since 2000 --- but
+this headline figure conceals a 50\% rise in late-stage diagnoses over the same
+period. Non-Hispanic Black men face incidence and mortality rates that are 60\% and
+109\% higher, respectively, than White men, a gap that has not meaningfully narrowed
+in over two decades. And men diagnosed at the distant stage have a five-year survival
+rate of 38\%, compared to nearly 100\% for those diagnosed at the localized stage ---
+a 62-point gap that is, in large part, a consequence of inequitable access to
+screening.
+
+These findings are not new to the medical literature. What this project contributes
+is a tool that makes them visible, accessible, and interactive for an audience far
+beyond academic researchers. Patients, families, advocates, and community health
+workers can now explore these patterns themselves and see the data that defines the
+risk landscape for prostate cancer in America.
+
+Data science, when done well, is an act of translation: making the complex legible,
+and making the invisible visible. This project was built with that purpose in mind,
+and with the hope that the patterns it reveals will someday motivate the policy
+changes and equitable access to care that could close the gaps it documents.
+
+\newpage
+\singlespacing
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

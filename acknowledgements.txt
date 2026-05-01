@@ -1,0 +1,114 @@
+acknowledgements.txt
+Prostate Cancer in America — Epidemiology Dashboard
+Ava McClinton | DATS 4001 Capstone | Spring 2026
+George Washington University
+
+This file is an informal record of the tools, datasets, documentation, and resources
+that supported this project. It is maintained separately from the formal report
+bibliography, which contains only peer-reviewed academic sources.
+
+──────────────────────────────────────────────────────────────
+DATA SOURCES
+──────────────────────────────────────────────────────────────
+
+- NCI SEER 22 Database (Surveillance, Epidemiology, and End Results Program)
+  https://seer.cancer.gov
+  Used as the primary data source for all incidence, mortality, survival, stage,
+  race, and geographic statistics. Accessed 2024–2025.
+
+- CDC WONDER (Wide-ranging Online Data for Epidemiologic Research)
+  https://wonder.cdc.gov
+  Used to cross-validate age-adjusted mortality rates against SEER-derived figures.
+
+- American Cancer Society — Cancer Facts & Figures 2025
+  https://www.cancer.org/research/cancer-facts-statistics.html
+  Used for current diagnosis and death estimates cited in the introduction.
+
+──────────────────────────────────────────────────────────────
+PYTHON LIBRARIES AND DOCUMENTATION
+──────────────────────────────────────────────────────────────
+
+- Python 3 official documentation: https://docs.python.org
+- pandas documentation: https://pandas.pydata.org/docs
+  Used extensively for data cleaning, merging, and age-adjustment calculations.
+- statsmodels documentation: https://www.statsmodels.org/stable/index.html
+  Used for OLS regression modeling of incidence and mortality trends.
+- Flask documentation: https://flask.palletsprojects.com
+  Used to build the web application backend and API endpoints.
+- Plotly Python and Plotly.js documentation: https://plotly.com/python/
+  Used for all interactive chart rendering in the dashboard.
+- SQLite documentation: https://www.sqlite.org/docs.html
+  Used for database schema design, queries, and optimization.
+- Matplotlib documentation: https://matplotlib.org/stable/contents.html
+  Used for generating static figures included in the final report.
+
+──────────────────────────────────────────────────────────────
+TUTORIALS AND REFERENCES
+──────────────────────────────────────────────────────────────
+
+- "Age Adjustment" explanation — CDC WONDER Help:
+  https://wonder.cdc.gov/wonder/help/main.html#age-adjusted-rates
+  Helped me understand how to correctly interpret and replicate age-adjusted rates
+  from SEER data.
+
+- Flask Mega-Tutorial by Miguel Grinberg:
+  https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world
+  Referenced for Flask application structure, routing, and API design patterns.
+
+- Stack Overflow — various threads on pandas groupby, SQLite parameterized queries,
+  and Flask JSON responses. Specific URLs not recorded but searches included:
+  "pandas groupby weighted mean", "sqlite3 python fetchall to dataframe",
+  "flask jsonify list of dicts".
+
+- Cross Validated (StackExchange) — threads on:
+  "why not use race as numeric variable in regression"
+  "OLS vs Cox for population-level trend analysis"
+  These confirmed the methodological reasoning behind stratified OLS.
+
+- Plotly documentation examples for choropleth maps (US state-level):
+  https://plotly.com/python/choropleth-maps/
+
+──────────────────────────────────────────────────────────────
+AI TOOLS
+──────────────────────────────────────────────────────────────
+
+I used Claude (Anthropic, claude.ai) throughout this project for the following:
+
+1. CODE DEBUGGING
+   - Debugging Flask routing errors (404s on API endpoints with query parameters)
+   - Fixing a SQLite query that was returning incorrect age-group aggregations
+   - Resolving Plotly layout issues with the choropleth map's colorscale
+
+2. CODE STRUCTURE
+   - Reviewing the overall Flask app structure and suggesting separation of
+     the data pipeline (offline) from the application layer (live queries)
+   - Suggesting the standalone HTML export approach so the dashboard could
+     run without a server
+
+3. WRITTEN CONTENT
+   - Reviewing and editing the LaTeX report for clarity and flow
+   - Helping draft the references.bib file with correct IEEEtran BibTeX formatting
+   - Reviewing the presentation script for the poster session
+
+Example prompts used:
+  - "My Flask route /api/incidence-trends is returning a 404 when I pass a
+    stage parameter. Here is my route definition: [code]. What's wrong?"
+  - "I have a SQLite table with columns year, stage, rate. I want to pivot this
+    so each stage is a column. What's the best way to do this in pandas?"
+  - "Can you help me write a BibTeX entry for the USPSTF 2012 PSA screening
+    recommendation paper in Annals of Internal Medicine?"
+
+All analysis, modeling decisions, interpretation of results, and conclusions are
+entirely my own. I verified every number in the report against the raw SEER data
+and published benchmark statistics.
+
+──────────────────────────────────────────────────────────────
+COURSE MATERIALS
+──────────────────────────────────────────────────────────────
+
+- DATS 4001 course materials and lecture notes (Prof. Sarah Burnett)
+  Informed the overall project structure, rubric requirements, and expectations
+  for the capstone report format.
+
+- GWU Overleaf capstone report template (report.tex)
+  Used as the required document template for the final report.
