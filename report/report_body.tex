@@ -353,77 +353,160 @@ beyond what the pooled baseline can offer.
 
 \subsection{Finding 1: Incidence Decline Masks a Growing Late-Stage Crisis}
 
-Figure~\ref{fig:incidence-trend} shows prostate cancer incidence and mortality trends
-from 2000 to 2022, stratified by stage.
+Figure~\ref{fig:incidence-trend} shows age-adjusted prostate cancer incidence by
+stage and mortality from 2000 to 2022, with OLS-based projections extended to 2030
+and 95\% confidence intervals shown as shaded bands.
 
 \begin{figure}[H]
     \begin{center}
-        \includegraphics[width=0.85\textwidth]{figures/incidence_trends.png}
+        \includegraphics[width=0.92\textwidth]{figures/dashboard_incidence_trends.png}
     \end{center}
-    \caption{Age-adjusted prostate cancer incidence rate (localized and distant stage)
-    and mortality rate per 100,000 men, United States, 2000--2022. Vertical dashed
-    lines mark the 2012 USPSTF Grade D and 2018 Grade C screening recommendations.
-    Data source: SEER 22, National Cancer Institute.}
+    \caption{Age-adjusted prostate cancer incidence (localized, distant, and regional
+    stage) and mortality rate per 100,000 men, United States, 2000--2022, with linear
+    regression projections to 2030 (95\% CI shaded). Vertical dashed lines mark the
+    2012 USPSTF Grade D recommendation (``Routine PSA Screening Discouraged'') and the
+    2018 Grade C revision (``Shared Decision-Making Recommended''). Projections use
+    OLS fit on the most recent 8 years of observed data. Data source: SEER 22,
+    National Cancer Institute.}
     \label{fig:incidence-trend}
 \end{figure}
 
 Localized-stage incidence fell from 153.1 per 100,000 in 2000 to 91.0 per 100,000
-in 2022, a decline of 40.6\%. This decline was concentrated in the years immediately
-following the 2012 USPSTF recommendation \cite{uspstf2012, uspstf2018}. However,
-over the same period, distant-stage incidence rose from 8.4 per 100,000 in 2000 to
-12.6 per 100,000 in 2022, an increase of 50\%. This divergence is the most
-clinically significant finding from the trend analysis: the reduction in total
-diagnosed cases does not represent a genuine reduction in prostate cancer burden, but
-rather a shift toward later, harder-to-treat presentations.
+in 2022, a decline of 40.6\%, with the steepest drop occurring immediately after the
+2012 USPSTF Grade D recommendation \cite{uspstf2012}. Following the 2018 Grade C
+revision \cite{uspstf2018}, localized incidence began a modest recovery, consistent
+with renewed screening uptake. The projection to 2030 suggests localized incidence
+will continue rising gradually toward approximately 100 per 100,000, approaching but
+not returning to pre-2012 levels.
 
-\subsection{Finding 2: Racial Disparities in Incidence and Mortality}
+The more alarming trend is in distant-stage incidence, which rose from 8.4 per
+100,000 in 2000 to 12.6 in 2022 --- an increase of 50\% --- and is projected to
+continue rising through 2030. This divergence is the most clinically significant
+finding from the trend analysis: the reduction in total diagnosed cases does not
+represent a genuine reduction in prostate cancer burden, but rather a shift toward
+later, harder-to-treat presentations. Men who would previously have been caught at
+the localized stage are now reaching diagnosis at the distant stage, where five-year
+survival falls to 38\%.
 
-Figure~\ref{fig:race-disparities} shows age-adjusted incidence and mortality rates
-by race and ethnicity, averaged over the 2018--2022 period.
+\subsection{Finding 2: The Racial Gap Is Not Closing}
 
-\begin{figure}[H]
-    \begin{center}
-        \includegraphics[width=0.85\textwidth]{figures/race_disparities.png}
-    \end{center}
-    \caption{Age-adjusted prostate cancer incidence and mortality rates per 100,000
-    men by race and ethnicity, United States, 2018--2022 average.
-    Data source: SEER 22, National Cancer Institute.}
-    \label{fig:race-disparities}
-\end{figure}
-
-Non-Hispanic Black men have the highest incidence rate of any group at 175.2 per
-100,000 --- 60\% higher than Non-Hispanic White men (109.3). The mortality disparity
-is even larger: Black men die from prostate cancer at a rate of 37.9 per 100,000,
-compared to 18.1 for White men, a difference of 109\%. The racial gap in prostate
-cancer mortality has not narrowed meaningfully over the study period, underscoring
-the structural, rather than simply biological, nature of the disparity
-\cite{rebbeck2017, desantis2019}.
-
-\subsection{Finding 3: Stage at Diagnosis Determines Survival}
-
-Figure~\ref{fig:survival} shows five-year relative survival rates by stage at
-diagnosis.
+Figure~\ref{fig:race-projections} shows race-stratified incidence trends from 2000
+to 2022 with projections to 2030, addressing the question: will the racial gap in
+prostate cancer burden close?
 
 \begin{figure}[H]
     \begin{center}
-        \includegraphics[width=0.75\textwidth]{figures/survival_stage.png}
+        \includegraphics[width=0.92\textwidth]{figures/dashboard_race_projections.png}
     \end{center}
-    \caption{Five-year relative survival rate by stage at diagnosis for prostate
-    cancer, United States, 2018--2022. Data source: SEER 22, National Cancer
-    Institute.}
-    \label{fig:survival}
+    \caption{Age-adjusted prostate cancer incidence rate per 100,000 men by
+    race/ethnicity, United States, 2000--2022 (solid lines) with OLS projections
+    to 2030 (dashed lines, 95\% CI shaded). Non-Hispanic Black incidence is projected
+    to remain flat at approximately 175 per 100,000 through 2030, while Non-Hispanic
+    White and Hispanic incidence are projected to rise modestly. Data source:
+    SEER 22, National Cancer Institute.}
+    \label{fig:race-projections}
 \end{figure}
 
-Men diagnosed at the localized stage have a five-year relative survival rate of
-99.9\%. Men diagnosed at the distant stage --- when cancer has spread to lymph nodes,
-bones, or other organs --- have a five-year survival rate of only 38\%, a
-62-percentage-point gap. Given that late-stage diagnoses are rising and that Black
-men are disproportionately more likely to be diagnosed late, this survival gap is
-inseparable from questions of access and equity.
+Non-Hispanic Black men have consistently had the highest incidence of any group
+throughout the study period, starting at 228.5 per 100,000 in 2000 and declining
+to 175.2 by 2022 --- still 60\% above the Non-Hispanic White rate of 109.3.
+The mortality disparity is even larger: Black men die from prostate cancer at
+37.9 per 100,000, more than twice the White rate of 18.1 \cite{desantis2019}.
+
+The projections tell a sobering story. Non-Hispanic Black incidence is forecast to
+remain essentially flat at approximately 175 per 100,000 through 2030, while
+Non-Hispanic White and Hispanic incidence are projected to rise gradually as
+post-2018 screening uptake increases. This means the \textit{absolute gap} between
+Black and White men may actually widen slightly by 2030. The answer to the
+dashboard's framing question --- ``Will the Gap Close?'' --- is no, not on the
+current trajectory. This finding underscores that the disparity is structural in
+nature and will not resolve without targeted intervention \cite{rebbeck2017}.
+
+\subsection{Finding 3: Age at Diagnosis and the Screening Window}
+
+Figure~\ref{fig:age-distribution} shows the age distribution of new prostate cancer
+diagnoses across six age groups, with the 2018 USPSTF-recommended screening window
+(45--69 years) highlighted.
+
+\begin{figure}[H]
+    \begin{center}
+        \includegraphics[width=0.85\textwidth]{figures/dashboard_age_distribution.png}
+    \end{center}
+    \caption{Percentage of new prostate cancer cases by age group at diagnosis,
+    United States, SEER 22. Green bars indicate the recommended PSA screening window
+    (45--69 years); tan bars indicate age groups outside this window. The peak
+    diagnosis age group is 65--74 years (36.1\% of all cases), followed by 55--64
+    years (30.5\%). Data source: SEER 22, National Cancer Institute.}
+    \label{fig:age-distribution}
+\end{figure}
+
+The age distribution confirms that prostate cancer is overwhelmingly a disease of
+older men: 66.6\% of all diagnoses occur in men aged 55--74. The peak age group is
+65--74 years, accounting for 36.1\% of new cases, followed by 55--64 at 30.5\%.
+Only 9.2\% of diagnoses occur in men under 55. This concentration within the
+USPSTF-recommended screening window (45--69 years) --- which captures approximately
+39\% of all diagnoses --- reinforces the clinical logic of targeted screening
+within that age range, while also highlighting that a substantial share of cases
+(18.9\% in the 75--84 group) occur in men beyond the recommended screening age,
+where treatment decisions are more complex.
+
+\subsection{Finding 4: From Diagnosis to Outcome --- The Sankey Diagram}
+
+Figure~\ref{fig:sankey} presents a Sankey flow diagram tracing the journey of
+1,000 hypothetical diagnosed men from diagnosis through stage assignment to
+five-year survival outcome. This visualization was designed as the centerpiece of
+the dashboard's survival section, translating population-level survival statistics
+into an intuitive patient-facing format.
+
+\begin{figure}[H]
+    \begin{center}
+        \includegraphics[width=0.92\textwidth]{figures/dashboard_sankey.png}
+    \end{center}
+    \caption{Sankey flow diagram showing the pathway from prostate cancer diagnosis
+    to 5-year outcome for a cohort of 1,000 diagnosed men. Flow widths are
+    proportional to case counts. Of 1,000 diagnosed men: 760 are diagnosed at the
+    localized stage, 130 at regional, 80 at distant, and 30 at unknown stage.
+    Of the full cohort, 942 survive five years and 58 do not, with nearly all deaths
+    originating from the distant-stage pathway. Data source: SEER 22, National
+    Cancer Institute.}
+    \label{fig:sankey}
+\end{figure}
+
+The Sankey diagram makes concrete what the survival statistics alone cannot: the
+overwhelming majority of prostate cancer deaths flow from a single source. Of
+1,000 diagnosed men, 760 are caught at the localized stage and nearly all survive.
+The 80 men diagnosed at the distant stage --- just 8\% of the cohort --- account
+for the majority of the 58 deaths. The flow widths make this visually immediate in
+a way that a bar chart cannot: the distant-stage ribbon, thin as it enters the
+diagram, fans out to dominate the ``Did Not Survive'' outcome on the right.
+
+This visualization choice reflects a deliberate design principle of the dashboard:
+numbers alone rarely communicate risk. A patient who reads that distant-stage
+survival is 38\% understands an abstraction. A patient who sees 80 men flow into
+the distant pathway and watches most of them arrive at the ``Did Not Survive'' box
+understands their own situation. The Sankey was the most technically complex chart
+in the dashboard --- requiring careful proportional scaling of node heights, flow
+curvatures, and label positioning in Plotly.js --- and it is, in this author's view,
+the most effective communication tool the dashboard contains.
+
+\subsection{Connecting Results to the Research Question}
+
+Taken together, these four findings directly answer the research question posed in
+the introduction. U.S.\ prostate cancer incidence, mortality, and survival have
+varied substantially across race, stage, and geography from 1999 to 2022 --- and
+those variations are not random. They trace a coherent pattern of inequity:
+screening policy changes that reduced overall incidence also shifted burden toward
+later, harder-to-treat stages; Black men have absorbed a disproportionate share of
+that burden and show no trajectory toward parity by 2030; age at diagnosis
+concentrates risk squarely within the recommended screening window, reinforcing
+the case for equitable access to early detection; and the survival consequences of
+late diagnosis, visualized most clearly in the Sankey diagram, are severe and
+concentrated. The dashboard built in this project makes each of these patterns
+directly accessible to any user, regardless of statistical background.
 
 \subsection{Summary of Results}
 
-Table~\ref{tab:summary} summarizes the three primary quantitative findings of this
+Table~\ref{tab:summary} summarizes the primary quantitative findings of this
 analysis.
 
 \begin{table}[H]
@@ -436,6 +519,7 @@ analysis.
     Localized incidence, 2022 & 91.0 per 100K  & SEER 22 \\
     Decline in localized incidence & $-$40.6\%  & This analysis \\
     Rise in distant-stage incidence & $+$50.0\%  & This analysis \\
+    Projected localized incidence, 2030 & $\approx$100 per 100K & This analysis \\
     \hline
     Black men incidence (2018--2022) & 175.2 per 100K & SEER 22 \\
     White men incidence (2018--2022) & 109.3 per 100K & SEER 22 \\
@@ -443,14 +527,20 @@ analysis.
     Black men mortality rate & 37.9 per 100K & SEER 22 \\
     White men mortality rate & 18.1 per 100K & SEER 22 \\
     Black/White mortality ratio & 2.09$\times$ & This analysis \\
+    Projected gap closure by 2030 & None & This analysis \\
+    \hline
+    Peak diagnosis age group & 65--74 years (36.1\%) & SEER 22 \\
+    Cases in screening window (45--69) & $\approx$39\% & SEER 22 \\
     \hline
     5-year survival, localized stage & 99.9\% & SEER 22 \\
     5-year survival, distant stage  & 38.0\% & SEER 22 \\
     Survival gap (localized $-$ distant) & 61.9 pp & This analysis \\
+    Deaths per 1,000 diagnosed & 58 & This analysis \\
     \hline
     \end{tabular}
     \caption{Summary of primary quantitative findings. All rates are age-adjusted
-    to the 2000 U.S.\ standard population. ``pp'' denotes percentage points.}
+    to the 2000 U.S.\ standard population. ``pp'' denotes percentage points.
+    Projections use OLS regression on recent observed data.}
     \label{tab:summary}
 \end{table}
 

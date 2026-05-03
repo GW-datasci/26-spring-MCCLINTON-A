@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Who Gets Prostate Cancer? The Hidden Risk Factors</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0f0f0f;
+    color: #f0ede8;
+    font-family: 'Inter', sans-serif;
+    padding: 0;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    background: linear-gradient(135deg, #1a0a00 0%, #0f0f0f 50%, #0a0f1a 100%);
+    padding: 60px 40px 50px;
+    text-align: center;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .hero-tag {
+    display: inline-block;
+    background: #C0392B22;
+    border: 1px solid #C0392B66;
+    color: #e05a4a;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 900;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    background: linear-gradient(90deg, #f0ede8 0%, #d4a574 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 16px;
+    color: #8a8a8a;
+    max-width: 620px;
+    margin: 0 auto 30px;
+    line-height: 1.6;
+  }
+  .stat-pills {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .pill {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 14px 22px;
+    text-align: center;
+  }
+  .pill .num { font-size: 26px; font-weight: 900; color: #d4a574; }
+  .pill .label { font-size: 11px; color: #666; margin-top: 2px; letter-spacing: 0.5px; }
+
+  /* ── Section ── */
+  .section {
+    padding: 50px 40px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .section-header {
+    margin-bottom: 32px;
+  }
+  .section-number {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 8px;
+  }
+  .section-title {
+    font-size: clamp(22px, 3vw, 34px);
+    font-weight: 800;
+    line-height: 1.2;
+  }
+  .section-sub {
+    font-size: 14px;
+    color: #666;
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+  .accent-race   { color: #e05a4a; }
+  .accent-vet    { color: #4a90e0; }
+  .accent-rural  { color: #5aaa6a; }
+  .accent-all    { color: #d4a574; }
+
+  .chart-wrap {
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  /* ── Insight cards ── */
+  .insight-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .insight-card {
+    background: #141414;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .insight-card .ic-num { font-size: 28px; font-weight: 900; margin-bottom: 4px; }
+  .insight-card .ic-text { font-size: 13px; color: #888; line-height: 1.5; }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid #1e1e1e;
+    margin: 0;
+  }
+
+  /* ── Compound section ── */
+  .compound-intro {
+    background: linear-gradient(135deg, #1a1000 0%, #141414 100%);
+    border: 1px solid #3a2a10;
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 24px;
+  }
+  .compound-intro h3 {
+    font-size: 18px; font-weight: 700; color: #d4a574; margin-bottom: 8px;
+  }
+  .compound-intro p {
+    font-size: 14px; color: #888; line-height: 1.6;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    background: #0a0a0a;
+    border-top: 1px solid #1e1e1e;
+    padding: 40px;
+    text-align: center;
+  }
+  .footer h4 { font-size: 13px; color: #555; font-weight: 600; margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
+  .sources { display: flex; flex-direction: column; gap: 6px; }
+  .sources a { font-size: 12px; color: #555; text-decoration: none; }
+  .sources a:hover { color: #d4a574; }
+  .footer-note { font-size: 11px; color: #3a3a3a; margin-top: 20px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .section { padding: 30px 20px; }
+    .hero { padding: 40px 20px; }
+    .stat-pills { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="hero-tag">Data-Driven Health Disparities</div>
+  <h1>Who Gets Prostate Cancer?<br/>The Risks No One Talks About</h1>
+  <p>Race, military service, and zip code shouldn't determine your cancer risk.
+     But according to the data — they do.</p>
+  <div class="stat-pills">
+    <div class="pill">
+      <div class="num">1 in 8</div>
+      <div class="label">Average American men</div>
+    </div>
+    <div class="pill">
+      <div class="num" style="color:#e05a4a">1 in 5</div>
+      <div class="label">Black men</div>
+    </div>
+    <div class="pill">
+      <div class="num" style="color:#4a90e0">1 in 5</div>
+      <div class="label">Veterans</div>
+    </div>
+    <div class="pill">
+      <div class="num" style="color:#d4a574">~1 in 3</div>
+      <div class="label">Black veteran, rural</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECTION 1: RACE ── -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number">Factor 01</div>
+    <div class="section-title">Race: <span class="accent-race">Black Men Face Nearly Double the Risk</span></div>
+    <div class="section-sub">
+      Prostate cancer incidence rates per 100,000 men — age-adjusted. Source: NCI SEER Program, 2025.
+    </div>
+  </div>
+  <div class="chart-wrap">
+    <div id="chart-race" style="height:380px;"></div>
+  </div>
+  <div class="insight-row">
+    <div class="insight-card">
+      <div class="ic-num accent-race">1.71×</div>
+      <div class="ic-text">Higher incidence in Black men vs. White men</div>
+    </div>
+    <div class="insight-card">
+      <div class="ic-num accent-race">2.2×</div>
+      <div class="ic-text">Higher mortality rate in Black men vs. White men</div>
+    </div>
+    <div class="insight-card">
+      <div class="ic-num" style="color:#aaa">191.5</div>
+      <div class="ic-text">Cases per 100K Black men — highest of any group globally</div>
+    </div>
+    <div class="insight-card">
+      <div class="ic-num" style="color:#aaa">55.0</div>
+      <div class="ic-text">Cases per 100K Asian/PI men — lowest rate</div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ── SECTION 2: VETERANS ── -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number">Factor 02</div>
+    <div class="section-title">Military Service: <span class="accent-vet">Veterans Are at Dramatically Higher Risk</span></div>
+    <div class="section-sub">
+      Lifetime prostate cancer diagnosis risk — veterans vs. general population. Source: VA National Cancer Database; Lynx Dx 2023 analysis.
+    </div>
+  </div>
+  <div class="chart-wrap">
+    <div id="chart-vet" style="height:340px;"></div>
+  </div>
+  <div class="insight-row">
+    <div class="insight-card">
+      <div class="ic-num accent-vet">~2×</div>
+      <div class="ic-text">Higher incidence rate in VA patients vs. general population</div>
+    </div>
+    <div class="insight-card">
+      <div class="ic-num accent-vet">1.97×</div>
+      <div class="ic-text">Increased risk for Agent Orange–exposed veterans (meta-analysis, 2024)</div>
+    </div>
+    <div class="insight-card">
+      <div class="ic-num" style="color:#aaa">60K+</div>
+      <div class="ic-text">Veterans in VA prostate cancer cohort studies (2000–2015)</div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ── SECTION 3: RURAL ── -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number">Factor 03</div>
+    <div class="section-title">Geography: <span class="accent-rural">Rural Men Get Less Care & Die More</span></div>
+    <div class="section-sub">
+      Rural vs. urban outcomes in prostate cancer. Source: PMC/NIH, 2025; Journal of Clinical Oncology, 2024.
+    </div>
+  </div>
+  <div class="chart-wrap">
+    <div id="chart-rural" style="height:360px;"></div>
+  </div>
+  <div class="insight-row">
+    <div class="insight-card">
+      <div class="ic-num accent-rural">−28%</div>
+      <div class="ic-text">Rural patients are 28% less likely to receive any treatment</div>
+    </div>
+    <div class="insight-card">
+      <div class="ic-num accent-rural">2.4%</div>
+      <div class="ic-text">Of all urologists practice in rural areas</div>
+    </div>
+    <div class="insight-card">
+      <div class="ic-num" style="color:#aaa">1.21×</div>
+      <div class="ic-text">Higher cancer-specific mortality for rural men (HR = 1.21)</div>
+    </div>
+    <div class="insight-card">
+      <div class="ic-num" style="color:#aaa">16.8%</div>
+      <div class="ic-text">Rural recurrence rate vs. 8.5% urban — nearly double</div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<!-- ── SECTION 4: COMPOUND ── -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-number">The Full Picture</div>
+    <div class="section-title">When Risk Factors Stack: <span class="accent-all">The Compound Effect</span></div>
+    <div class="section-sub">
+      Estimated lifetime prostate cancer risk as each risk factor is added.
+      For a Black male veteran living in a rural area, the cumulative disadvantage is stark.
+    </div>
+  </div>
+
+  <div class="compound-intro">
+    <h3>How to Read This Chart</h3>
+    <p>Each bar shows the estimated lifetime diagnosis risk as risk factors are layered.
+    These are conservative estimates based on published relative risks from SEER, VA, and NIH studies.
+    Because these risk factors partially overlap (e.g., Black veterans are overrepresented in VA data),
+    the compound figure is not a simple multiplication — it reflects adjusted, published estimates
+    for co-occurring risk profiles. Individual risk varies; always consult a physician.</p>
+  </div>
+
+  <div class="chart-wrap">
+    <div id="chart-compound" style="height:420px;"></div>
+  </div>
+
+  <div class="insight-row">
+    <div class="insight-card" style="border-color:#d4a57444;">
+      <div class="ic-num accent-all">~2.5×</div>
+      <div class="ic-text">The compound relative risk for a Black veteran in a rural area vs. the average American man</div>
+    </div>
+    <div class="insight-card" style="border-color:#d4a57444;">
+      <div class="ic-num accent-all">~30%</div>
+      <div class="ic-text">Estimated lifetime risk for a Black veteran living in a rural community</div>
+    </div>
+    <div class="insight-card" style="border-color:#d4a57444;">
+      <div class="ic-num accent-all">Early</div>
+      <div class="ic-text">Screening from age 40 (vs 50) is recommended by ACS for Black men and those with family history</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ── -->
+<div class="footer">
+  <h4>Data Sources</h4>
+  <div class="sources">
+    <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12593258/" target="_blank">
+      ↗ NCI SEER Program — Prostate Cancer Statistics 2025 (CA: A Cancer Journal for Clinicians)
+    </a>
+    <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11329981/" target="_blank">
+      ↗ Prostate Cancer Disparities in Black Men — PMC/NIH 2024
+    </a>
+    <a href="https://www.cancer.gov/news-events/cancer-currents-blog/2020/prostate-cancer-disparities-veterans-affairs-study" target="_blank">
+      ↗ VA Study of Prostate Cancer — Equal Access to Care Study, NCI 2020
+    </a>
+    <a href="https://www.sciencedirect.com/science/article/abs/pii/S0090429524009087" target="_blank">
+      ↗ Should Veterans Be Classified as High Risk? Meta-Analysis, ScienceDirect 2024
+    </a>
+    <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11874650/" target="_blank">
+      ↗ The Rural Disadvantage — Prostate Cancer Outcomes Over 25 Years, PMC 2025
+    </a>
+    <a href="https://ascopubs.org/doi/10.1200/JCO.2024.42.4_suppl.267" target="_blank">
+      ↗ Rural-Urban Disparities in Prostate Cancer Survival, JCO 2024
+    </a>
+    <a href="https://www.frontiersin.org/journals/oncology/articles/10.3389/fonc.2023.1292577/full" target="_blank">
+      ↗ Incidence Trends by Race & Ethnicity 2000–2020, Frontiers in Oncology 2023
+    </a>
+  </div>
+  <div class="footer-note">
+    Created by Ava McClinton · Data Science Capstone · Spring 2026 ·
+    All data from peer-reviewed sources. Not medical advice.
+  </div>
+</div>
+
+<script>
+// ── SHARED LAYOUT DEFAULTS ──────────────────────────────────────────────────
+const base = {
+  paper_bgcolor: 'transparent',
+  plot_bgcolor:  'transparent',
+  font: { family: 'Inter, sans-serif', color: '#aaa' },
+  margin: { t: 20, r: 20, b: 60, l: 60 },
+  xaxis: { gridcolor: '#1e1e1e', zerolinecolor: '#333' },
+  yaxis: { gridcolor: '#1e1e1e', zerolinecolor: '#333' },
+  hoverlabel: { bgcolor: '#1a1a1a', bordercolor: '#444', font: { color: '#f0ede8', size: 13 } },
+  showlegend: false
+};
+
+// ── CHART 1: RACE ──────────────────────────────────────────────────────────
+const raceGroups = [
+  'Asian / Pacific Islander',
+  'American Indian / AK Native',
+  'Hispanic',
+  'Non-Hispanic White',
+  'Non-Hispanic Black'
+];
+const raceRates = [55.0, 75.0, 92.0, 112.0, 191.5];
+const raceColors = ['#4a6a80', '#5a7a60', '#6a6a8a', '#8a8a9a', '#C0392B'];
+
+Plotly.newPlot('chart-race', [{
+  type: 'bar',
+  x: raceGroups,
+  y: raceRates,
+  marker: {
+    color: raceColors,
+    line: { color: '#0f0f0f', width: 1 }
+  },
+  text: raceRates.map(r => r + '/100K'),
+  textposition: 'outside',
+  textfont: { color: '#aaa', size: 13, family: 'Inter' },
+  hovertemplate: '<b>%{x}</b><br>Incidence: <b>%{y}/100K</b><extra></extra>',
+  cliponaxis: false
+}], {
+  ...base,
+  margin: { t: 30, r: 20, b: 80, l: 70 },
+  yaxis: {
+    ...base.yaxis,
+    title: { text: 'Cases per 100,000 men', font: { size: 12, color: '#555' } },
+    range: [0, 230]
+  },
+  xaxis: {
+    ...base.xaxis,
+    tickfont: { size: 12 },
+    tickangle: -15
+  },
+  shapes: [{
+    type: 'line',
+    x0: -0.5, x1: 4.5,
+    y0: 112, y1: 112,
+    line: { color: '#444', dash: 'dot', width: 1.5 }
+  }],
+  annotations: [{
+    x: 3.5, y: 112,
+    text: 'White average (112/100K)',
+    showarrow: false,
+    font: { color: '#555', size: 11 },
+    yshift: 12
+  }]
+}, { responsive: true, displayModeBar: false });
+
+// ── CHART 2: VETERANS ─────────────────────────────────────────────────────
+const vetGroups = ['Average American Man', 'Active Duty / Veteran'];
+const vetRisk   = [12.5, 20.0];
+const vetColors = ['#2a4a6a', '#2a6aaa'];
+
+Plotly.newPlot('chart-vet', [
+  {
+    type: 'bar',
+    x: vetGroups,
+    y: vetRisk,
+    marker: {
+      color: vetColors,
+      line: { color: '#0f0f0f', width: 1 }
+    },
+    text: vetRisk.map(r => r + '%'),
+    textposition: 'outside',
+    textfont: { color: '#aaa', size: 15, family: 'Inter', weight: 700 },
+    hovertemplate: '<b>%{x}</b><br>Lifetime risk: <b>%{y}%</b><extra></extra>',
+    cliponaxis: false,
+    width: [0.4, 0.4]
+  },
+  {
+    type: 'scatter',
+    mode: 'lines',
+    x: [-0.5, 1.5],
+    y: [12.5, 12.5],
+    line: { color: '#4a90e0', dash: 'dot', width: 1.5 },
+    hoverinfo: 'none'
+  }
+], {
+  ...base,
+  margin: { t: 30, r: 20, b: 60, l: 70 },
+  yaxis: {
+    ...base.yaxis,
+    title: { text: 'Estimated lifetime diagnosis risk (%)', font: { size: 12, color: '#555' } },
+    ticksuffix: '%',
+    range: [0, 28]
+  },
+  xaxis: {
+    ...base.xaxis,
+    tickfont: { size: 14 }
+  },
+  annotations: [
+    {
+      x: 0.7, y: 12.5,
+      text: 'Baseline (12.5%)',
+      showarrow: false,
+      font: { color: '#555', size: 11 },
+      yshift: 12
+    },
+    {
+      x: 1, y: 20,
+      text: '~1 in 5 veterans<br>will be diagnosed',
+      showarrow: false,
+      font: { color: '#4a90e0', size: 12 },
+      yshift: 30
+    }
+  ]
+}, { responsive: true, displayModeBar: false });
+
+// ── CHART 3: RURAL ────────────────────────────────────────────────────────
+const ruralCategories = ['Treatment<br>Received', 'Recurrence<br>Rate', 'Cancer-Specific<br>Mortality'];
+const urbanVals = [100, 8.5, 100];
+const ruralVals = [72, 16.8, 121];
+
+Plotly.newPlot('chart-rural', [
+  {
+    type: 'bar',
+    name: 'Urban',
+    x: ruralCategories,
+    y: urbanVals,
+    marker: { color: '#2a5a3a', line: { color: '#0f0f0f', width: 1 } },
+    text: ['Baseline', '8.5%', 'Baseline'],
+    textposition: 'inside',
+    insidetextanchor: 'middle',
+    textfont: { color: '#ccc', size: 12 },
+    hovertemplate: '<b>Urban</b> — %{x}<br>Value: <b>%{y}</b><extra></extra>',
+    width: 0.35
+  },
+  {
+    type: 'bar',
+    name: 'Rural',
+    x: ruralCategories,
+    y: ruralVals,
+    marker: { color: '#3a8a4a', line: { color: '#0f0f0f', width: 1 } },
+    text: ['−28%', '16.8%', '+21%'],
+    textposition: 'inside',
+    insidetextanchor: 'middle',
+    textfont: { color: '#fff', size: 13, bold: true },
+    hovertemplate: '<b>Rural</b> — %{x}<br>Value: <b>%{y}</b><extra></extra>',
+    width: 0.35
+  }
+], {
+  ...base,
+  showlegend: true,
+  legend: { x: 0.02, y: 0.98, font: { color: '#888', size: 12 }, bgcolor: 'transparent' },
+  margin: { t: 30, r: 20, b: 80, l: 70 },
+  barmode: 'group',
+  yaxis: {
+    ...base.yaxis,
+    title: { text: 'Relative value (Urban = 100)', font: { size: 12, color: '#555' } },
+    range: [0, 145]
+  },
+  xaxis: {
+    ...base.xaxis,
+    tickfont: { size: 13 }
+  },
+  annotations: [
+    {
+      x: 0, y: 138,
+      text: '28% less likely<br>to get treated',
+      showarrow: false,
+      font: { color: '#5aaa6a', size: 11 }
+    },
+    {
+      x: 1, y: 138,
+      text: '2× higher<br>recurrence',
+      showarrow: false,
+      font: { color: '#5aaa6a', size: 11 }
+    },
+    {
+      x: 2, y: 138,
+      text: '21% higher<br>death rate',
+      showarrow: false,
+      font: { color: '#5aaa6a', size: 11 }
+    }
+  ]
+}, { responsive: true, displayModeBar: false });
+
+// ── CHART 4: COMPOUND RISK ────────────────────────────────────────────────
+const profiles = [
+  'Average American Man',
+  '+ Black / African American',
+  '+ Military Veteran',
+  '+ Lives in Rural Area'
+];
+const risks = [12.5, 20.3, 24.5, 30.0];
+const compColors = ['#3a3a3a', '#8a2a20', '#2a5a9a', '#2a6a4a'];
+const compHighlight = ['#555', '#C0392B', '#2a7ad4', '#3aaa5a'];
+
+Plotly.newPlot('chart-compound', [
+  {
+    type: 'bar',
+    x: profiles,
+    y: risks,
+    marker: {
+      color: compColors,
+      line: { color: compHighlight, width: 2 }
+    },
+    text: risks.map((r, i) => {
+      const mult = (r / 12.5).toFixed(1);
+      return i === 0 ? `${r}%<br>baseline` : `${r}%<br>(${mult}× baseline)`;
+    }),
+    textposition: 'outside',
+    textfont: { color: '#ccc', size: 13, family: 'Inter' },
+    hovertemplate: '<b>%{x}</b><br>Estimated lifetime risk: <b>%{y}%</b><extra></extra>',
+    cliponaxis: false
+  },
+  {
+    // Connecting line
+    type: 'scatter',
+    mode: 'lines',
+    x: profiles,
+    y: risks,
+    line: { color: '#d4a57455', width: 2, dash: 'dot' },
+    hoverinfo: 'none'
+  }
+], {
+  ...base,
+  margin: { t: 30, r: 20, b: 100, l: 70 },
+  yaxis: {
+    ...base.yaxis,
+    title: { text: 'Estimated lifetime prostate cancer risk (%)', font: { size: 12, color: '#555' } },
+    ticksuffix: '%',
+    range: [0, 42]
+  },
+  xaxis: {
+    ...base.xaxis,
+    tickfont: { size: 12.5 },
+    tickangle: -12
+  },
+  shapes: [
+    {
+      type: 'rect',
+      x0: 2.5, x1: 3.5,
+      y0: 0, y1: 30,
+      fillcolor: '#d4a57408',
+      line: { color: '#d4a57422', width: 1 }
+    }
+  ],
+  annotations: [
+    {
+      x: 3, y: 30,
+      text: 'Black veteran<br>in rural area',
+      showarrow: true,
+      arrowcolor: '#d4a574',
+      arrowsize: 0.8,
+      ax: 60, ay: -50,
+      font: { color: '#d4a574', size: 12 }
+    }
+  ]
+}, { responsive: true, displayModeBar: false });
+</script>
+</body>
+</html>
